@@ -142,9 +142,13 @@ try:
                                         if valoszinuseg >= KUSZOB and valoszinuseg > legjobb_szazalek:
                                             legjobb_szazalek = valoszinuseg
                                             
+                                            # Biztonságos sorszám kiolvasás (ha nincs, akkor alapértelmezett)
                                             sorszam = "Nincs adat"
-                                            if 'sid' in iroda and k.get('name') in iroda.get('sid', {}):
-                                                sorszam = iroda['sid'][k['name']]
+                                            try:
+                                                if 'sid' in iroda and k.get('name') in iroda.get('sid', {}):
+                                                    sorszam = iroda['sid'][k['name']]
+                                            except:
+                                                pass
                                             
                                             legjobb_opcio = {
                                                 'sport_nev': sport.replace('_', ' ').title(),
@@ -199,7 +203,6 @@ try:
                 st.markdown("---")
                 st.markdown("**Meccs kimenetelei (%):**")
                 
-                # Itt javítottam ki a megjelenítést, a mentett neveket használjuk
                 kimenetek = j['osszes_kimenetel']
                 for nev, szazalek in kimenetek.items():
                     if nev == j['hazai_nev']:
