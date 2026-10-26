@@ -67,37 +67,34 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **másnapi** mérkőzéseket mutatja, ahol az esély eléri a **70%-ot**. Nem garancia, csak statisztika!")
+st.write("A lista a **másnapi** mérkőzéseket mutatja, ahol az esély eléri a **70%-ot**.")
 
 # --- BEALLITASOK ---
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
-KUSZOB = 0.70  # Beállítva 70%-ra
+KUSZOB = 0.70  
 MAX_LISTA = 10 
+MAX_KOMBI = 3  # Maximum ennyi meccs lehet egy kombinációban
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
 
 try:
-    # A HOLNAPI dátum kiszámítása
     holnap_datum = (datetime.utcnow() + timedelta(days=1))
     holnap_str = holnap_datum.strftime("%Y-%m-%d")
     
-    # Lekérjük az összes elérhető sportágat az API-ból
     sports_url = f"https://api.the-odds-api.com/v4/sports/?apiKey={API_KEY}"
     sports_valasz = requests.get(sports_url)
     
     if sports_valasz.status_code == 200:
         osszes_sport = sports_valasz.json()
-        # Kiszűrjük azokat, amikre lehet fogadni
         aktiv_sportok = [s['key'] for s in osszes_sport if not s.get('has_outrights', True)]
     else:
         aktiv_sportok = []
 
     jeloltek = []
     
-    with st.spinner("Adatok letöltése az összes sportágból (ez eltarthat pár másodpercig)..."):
+    with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
-            # Lekérjük a holnapi meccseket minden sportágra
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
             valasz = requests.get(url)
@@ -148,14 +145,13 @@ try:
                     if legjobb_opcio:
                         jeloltek.append(legjobb_opcio)
     
-    # Rendezés százalék szerint és limitálás 10-re
     jeloltek.sort(key=lambda x: x['szazalek'], reverse=True)
     jeloltek = jeloltek[:MAX_LISTA]
     
     kivalasztott_meccsek = []
 
     if not jeloltek:
-        st.warning(f"📭 Holnap nincs olyan meccs egyetlen sportágban sem, aminek az esélye elérné a {int(KUSZOB*100)}%-ot. Az app azt javasolja: holnap ne fogadj.")
+        st.warning(f"📭 Holnap nincs olyan meccs egyetlen sportágban sem, aminek az esélye elérné a {int(KUSZOB*100)}%-ot.")
     else:
         st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
         
@@ -195,27 +191,31 @@ try:
         st.markdown("---")
         st.header("🧾 Kombinációs Szelvény")
         
-        if len(kivalasztott_meccsek) == 1:
-            st.write("ℹ️ **Szimpla fogadás** (1 esemény)")
-            komb_esely = kivalasztott_meccsek[0]['szazalek']
-            ossz_odds = kivalasztott_meccsek[0]['odds']
+        # Itt jön a 3 meccses limit ellenőrzése
+        if len(kivalasztott_meccsek) > MAX_KOMBI:
+            st.error(f"⚠️ **FIGYELEM!** Túl sok meccset választottál ki ({len(kivalasztott_meccsek)} db). A biztonságos kombinációhoz **maximum {MAX_KOMBI} meccs** javasolt! Kérlek, vegyél ki legalább {len(kivalasztott_meccsek) - MAX_KOMBI} meccset a listából.")
         else:
-            st.write(f"ℹ️ **Kombinációs fogadás** ({len(kivalasztott_meccsek)} esemény)")
-            komb_esely = 1.0
-            ossz_odds = 1.0
+            if len(kivalasztott_meccsek) == 1:
+                st.write("ℹ️ **Szimpla fogadás** (1 esemény)")
+                komb_esely = kivalasztott_meccsek[0]['szazalek']
+                ossz_odds = kivalasztott_meccsek[0]['odds']
+            else:
+                st.write(f"ℹ️ **Kombinációs fogadás** ({len(kivalasztott_meccsek)} esemény)")
+                komb_esely = 1.0
+                ossz_odds = 1.0
+                for m in kivalasztott_meccsek:
+                    komb_esely *= m['szazalek']
+                    ossz_odds *= m['odds']
+            
+            komb_tet = st.number_input("Tét összege (Ft):", min_value=100, value=1000, step=500, key="komb_tet")
+            varhato_nyeremeny = komb_tet * ossz_odds
+            
             for m in kivalasztott_meccsek:
-                komb_esely *= m['szazalek']
-                ossz_odds *= m['odds']
-        
-        komb_tet = st.number_input("Tét összege (Ft):", min_value=100, value=1000, step=500, key="komb_tet")
-        varhato_nyeremeny = komb_tet * ossz_odds
-        
-        for m in kivalasztott_meccsek:
-            st.write(f"- {m['meccs']} ({m['opcio']})")
-        
-        st.info(f"📈 **Összesített Odds:** {ossz_odds:.2f}")
-        st.info(f"🎯 **Kombinált Esély (%):** {komb_esely*100:.1f}% (Veszteség esélye: {(1-komb_esely)*100:.1f}%)")
-        st.success(f"💰 **Várható Nyeremény:** {varhato_nyeremeny:.0f} Ft (Nettó: +{varhato_nyeremeny - komb_tet:.0f} Ft)")
+                st.write(f"- {m['meccs']} ({m['opcio']})")
+            
+            st.info(f"📈 **Összesített Odds:** {ossz_odds:.2f}")
+            st.info(f"🎯 **Kombinált Esély (%):** {komb_esely*100:.1f}% (Veszteség esélye: {(1-komb_esely)*100:.1f}%)")
+            st.success(f"💰 **Várható Nyeremény:** {varhato_nyeremeny:.0f} Ft (Nettó: +{varhato_nyeremeny - komb_tet:.0f} Ft)")
 
 except Exception as e:
     st.error("Váratlan hiba történt: " + str(e))
