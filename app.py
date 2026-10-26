@@ -121,13 +121,13 @@ try:
                         kezdes_formazott = "Nincs idopont"
                         befejezes_formazott = "?"
                     
-                    opciok_dict = {} # Szótár az ismétlődések kiszűréséhez
+                    opciok_dict = {}
                     h2h_szazalekok = {}
                     
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
                             if market['key'] not in ['h2h', 'totals', 'btts']: 
-                                continue # Kiszűrjük a lay/egyéb tőzsdei opciókat
+                                continue
                                 
                             kimenetek = market['outcomes']
                             nyers_oddsok = [k['price'] for k in kimenetek]
@@ -151,7 +151,6 @@ try:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
                                 if valoszinuseg >= KUSZOB:
-                                    # Csak akkor vesszük fel, ha még nincs ilyen nevű opció (így csak a legjobb szorzót/irodát tartja meg)
                                     if kimenetel_nev not in opciok_dict:
                                         opciok_dict[kimenetel_nev] = {
                                             'opcio_nev': kimenetel_nev,
@@ -221,10 +220,9 @@ try:
                 if 'vendeg' in h2h:
                     st.markdown(f"<span class='vendeg'>✈️ {h2h['vendeg'][0]}: {h2h['vendeg'][1]*100:.1f}%</span>", unsafe_allow_html=True)
                 
-                # Tippmix kereső gomb
+                # Tippmix gomb (főoldalra visz)
                 st.markdown("---")
-                tippmix_link = f"https://www.tippmix.hu/mobil/elo/kereses?search={j['meccs'].replace(' ', '+')}"
-                st.markdown(f"[🔍 Keresés a Tippmix oldalán]({tippmix_link})")
+                st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
     if len(kivalasztott_meccsek) > 0:
         st.markdown("---")
