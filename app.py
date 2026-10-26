@@ -73,8 +73,8 @@ st.markdown(f"""
 st.write("Pipáld ki a kívánt fogadási opciókat! (A lista a holnapi meccseket mutatja)")
 
 # --- BEALLITASOK ---
-API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.10 # 50%-ra állítva, hogy biztosan lássunk meccseket
+API_KEY = "IDE_IRD_AZ_UJ_API_KULCSOD"  # <-- IDE MÁSOLD BE AZ ÚJ KULCSOT!
+KUSZOB = 0.10  # Egyelőre 10%-on hagyjuk a teszthez
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -98,7 +98,7 @@ try:
     
     with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
-            # Focira kérjük a gólokat és BTTS-t is, másra csak az 1X2-t
+            # Kérjük a gólokat, BTTS-t és a szögleteket/lapokat is, ahol lehet
             markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
@@ -134,20 +134,27 @@ try:
                             for k in kimenetek:
                                 valoszinuseg = (1 / k['price']) / nyers_osszeg
                                 
-                                kimenetel_nev = k['name']
+                                # A KATEGÓRIA NEVE ÉS A KIÍRÁS FORMÁZÁSA
+                                kimenetel_nev = ""
                                 if market['key'] == 'totals':
-                                    kimenetel_nev = f"{k['name']} {k.get('point', '')} gól"
+                                    # Megnézzük, hogy gól-e vagy szöglet (ha az API adja)
+                                    if 'corner' in k.get('name', '').lower():
+                                        kimenetel_nev = f"🚩 [Szöglet] {k['name']} {k.get('point', '')}"
+                                    else:
+                                        kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
                                 elif market['key'] == 'btts':
-                                    kimenetel_nev = f"Mindkét csapat szerez gólt: {k['name']}"
+                                    kimenetel_nev = f"🥅 [BTTS] Mindkét csapat szerez gólt: {k['name']}"
                                 elif market['key'] == 'h2h':
+                                    kimenetel_nev = f"🏆 [1X2] {k['name']}"
                                     if k['name'] == m['home_team']:
                                         h2h_szazalekok['hazai'] = (k['name'], valoszinuseg)
                                     elif k['name'] == "Draw":
                                         h2h_szazalekok['dontetlen'] = (k['name'], valoszinuseg)
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
+                                else:
+                                    kimenetel_nev = f"[{market['key']}] {k['name']}"
                                 
-                                # Csak a küszöb feletti opciók kerülnek be a listába
                                 if valoszinuseg >= KUSZOB:
                                     opciok_listaja.append({
                                         'opcio_nev': kimenetel_nev,
@@ -192,9 +199,9 @@ try:
                 st.markdown("---")
                 st.write(f"🎯 **Választható opciók ({int(KUSZOB*100)}% felett):**")
                 
-                # Itt jelennek meg egymás alatt a pipálható opciók
                 for idx, opcio in enumerate(j['opciok']):
                     cb_key = f"cb_{i}_{idx}"
+                    # Itt jelenik meg a szép, olvasható név
                     label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']})"
                     
                     if st.checkbox(label, key=cb_key):
