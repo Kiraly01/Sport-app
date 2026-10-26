@@ -74,7 +74,7 @@ st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja. Nyisd le
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.70  # Csak a 70% feletti opciók kerülnek be a listába
+KUSZOB = 0.30 # Csak a 70% feletti opciók kerülnek be a listába
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
