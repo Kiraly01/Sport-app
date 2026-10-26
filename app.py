@@ -52,7 +52,6 @@ st.markdown("""
         box-shadow: 0px 4px 15px rgba(0, 212, 255, 0.1);
     }
     
-    /* Százalékok színezése */
     .hazai { color: #4ade80; font-weight: bold; }
     .dontetlen { color: #facc15; font-weight: bold; }
     .vendeg { color: #f87171; font-weight: bold; }
@@ -86,7 +85,6 @@ try:
     holnap_datum = (datetime.utcnow() + timedelta(days=1))
     holnap_str = holnap_datum.strftime("%Y-%m-%d")
     
-    # Itt kérjük be az includeSids=true-t a sorszámokhoz!
     sports_url = f"https://api.the-odds-api.com/v4/sports/?apiKey={API_KEY}"
     sports_valasz = requests.get(sports_url)
     
@@ -100,7 +98,6 @@ try:
     
     with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
-            # A végére betettük az includeSids=true-t
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z&includeSids=true"
             
             valasz = requests.get(url)
@@ -112,6 +109,8 @@ try:
                     legjobb_opcio = None
                     legjobb_szazalek = 0
                     kimenetek_szazalekai = {}
+                    hazai_nev = m['home_team']
+                    vendeg_nev = m['away_team']
                     
                     idopont_nyers = m.get('commence_time', '')
                     
@@ -136,16 +135,13 @@ try:
                                     nyers_oddsok = [k['price'] for k in kimenetek]
                                     nyers_osszeg = sum([1/o for o in nyers_oddsok])
                                     
-                                    # Kiszámoljuk az összes kimenetel százalékát
                                     for k in kimenetek:
                                         valoszinuseg = (1 / k['price']) / nyers_osszeg
                                         kimenetek_szazalekai[k['name']] = valoszinuseg
                                         
-                                        # Keressük a legjobbat
                                         if valoszinuseg >= KUSZOB and valoszinuseg > legjobb_szazalek:
                                             legjobb_szazalek = valoszinuseg
                                             
-                                            # Próbáljuk kinyerni a fogadóiroda sorszámát (sid)
                                             sorszam = "Nincs adat"
                                             if 'sid' in iroda and k.get('name') in iroda.get('sid', {}):
                                                 sorszam = iroda['sid'][k['name']]
@@ -160,7 +156,9 @@ try:
                                                 'sorszam': sorszam,
                                                 'kezdes': kezdes_formazott,
                                                 'befejezes': befejezes_formazott,
-                                                'osszes_kimenetel': kimenetek_szazalekai
+                                                'osszes_kimenetel': kimenetek_szazalekai,
+                                                'hazai_nev': hazai_nev,
+                                                'vendeg_nev': vendeg_nev
                                             }
                     if legjobb_opcio:
                         jeloltek.append(legjobb_opcio)
@@ -201,13 +199,13 @@ try:
                 st.markdown("---")
                 st.markdown("**Meccs kimenetelei (%):**")
                 
-                # Itt jelenítjük meg a Hazai / Döntetlen / Vendég opciókat
+                # Itt javítottam ki a megjelenítést, a mentett neveket használjuk
                 kimenetek = j['osszes_kimenetel']
                 for nev, szazalek in kimenetek.items():
-                    if nev == m['home_team'] or "Home" in nev:
+                    if nev == j['hazai_nev']:
                         st.markdown(f"<span class='hazai'>🏠 {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
-                    elif nev == "Draw" or "Döntetlen" in nev:
-                        st.markdown(f"<span class='dontetlen'>🤝 {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
+                    elif nev == "Draw":
+                        st.markdown(f"<span class='dontetlen'>🤝 Döntetlen: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
                     else:
                         st.markdown(f"<span class='vendeg'>✈️ {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
                 
