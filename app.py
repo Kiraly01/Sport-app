@@ -52,9 +52,6 @@ st.markdown("""
         box-shadow: 0px 4px 15px rgba(0, 212, 255, 0.1);
     }
     
-    .hazai { color: #4ade80; font-weight: bold; }
-    .dontetlen { color: #facc15; font-weight: bold; }
-    .vendeg { color: #f87171; font-weight: bold; }
     .magaban { color: #4ade80; font-size: 0.9em; font-weight: bold; }
     .kombi { color: #facc15; font-size: 0.9em; font-weight: bold; }
     .csak_kombi { color: #f87171; font-size: 0.9em; font-weight: bold; }
@@ -76,18 +73,17 @@ st.markdown(f"""
 st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja a legnépszerűbb sportágakból.")
 
 # --- BEALLITASOK ---
-API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"  # Az új kulcsod
+API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
 KUSZOB = 0.70  
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
-# Csak ezeket a sportágakat kérjük le, hogy kíméljük az API limitet!
 SPORTS_TO_FETCH = [
-    "soccer",              # Foci
-    "basketball_nba",      # Kosárlabda (NBA)
-    "tennis_atp",          # Tenisz (ATP)
-    "icehockey_nhl",       # Jégkorong (NHL)
-    "americanfootball_nfl" # Amerikai foci (NFL)
+    "soccer",              
+    "basketball_nba",      
+    "tennis_atp",          
+    "icehockey_nhl",       
+    "americanfootball_nfl" 
 ]
 
 if st.button("🔄 Adatok frissítése"):
@@ -125,7 +121,6 @@ try:
                         befejezes_formazott = "?"
                     
                     opciok_dict = {}
-                    h2h_szazalekok = {}
                     legjobb_opcio_esely = 0
                     legjobb_opcio_neve = ""
                     
@@ -148,12 +143,6 @@ try:
                                     kimenetel_nev = f"🥅 [BTTS] Mindkét csapat szerez gólt: {k['name']}"
                                 elif market['key'] == 'h2h':
                                     kimenetel_nev = f"🏆 [1X2] {k['name']}"
-                                    if k['name'] == m['home_team']:
-                                        h2h_szazalekok['hazai'] = (k['name'], valoszinuseg)
-                                    elif k['name'] == "Draw":
-                                        h2h_szazalekok['dontetlen'] = (k['name'], valoszinuseg)
-                                    else:
-                                        h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
                                 if valoszinuseg > legjobb_opcio_esely:
                                     legjobb_opcio_esely = valoszinuseg
@@ -178,8 +167,7 @@ try:
                             'befejezes': befejezes_formazott,
                             'legjobb_esely': legjobb_opcio_esely,
                             'legjobb_opcio_neve': legjobb_opcio_neve,
-                            'opciok': opciok_listaja,
-                            'h2h_adatok': h2h_szazalekok
+                            'opciok': opciok_listaja
                         })
     
     jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
@@ -196,16 +184,11 @@ try:
             cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
             with st.expander(cim, expanded=True):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown(f"📅 **Kezdés:** {j['kezdes']}")
-                    st.markdown(f"🏁 **Várható vége:** {j['befejezes']}")
-                with col2:
-                    st.markdown(f"🏦 **Legjobb iroda:** {j['opciok'][0]['iroda']}")
-                
+                st.markdown(f"📅 **Kezdés:** {j['kezdes']} | 🏁 **Várható vége:** {j['befejezes']} | 🏦 **Iroda:** {j['opciok'][0]['iroda']}")
                 st.markdown("---")
-                st.write("🎯 **Választható opciók (a legjobb százaléktól lefelé):**")
+                st.write("🎯 **Választható opciók:**")
                 
+                # Itt már a Hazai/Vendég/Döntetlen is benne van a pipálható listában!
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.80:
                         javaslat = "<span class='magaban'>💡 Magában javasolt</span>"
@@ -226,17 +209,6 @@ try:
                             'szazalek': opcio['szazalek'],
                             'odds': opcio['odds']
                         })
-                
-                st.markdown("---")
-                st.markdown("**1X2 Elemzés (Hazai / Döntetlen / Vendég):**")
-                
-                h2h = j['h2h_adatok']
-                if 'hazai' in h2h:
-                    st.markdown(f"<span class='hazai'>🏠 {h2h['hazai'][0]}: {h2h['hazai'][1]*100:.1f}%</span>", unsafe_allow_html=True)
-                if 'dontetlen' in h2h:
-                    st.markdown(f"<span class='dontetlen'>🤝 Döntetlen: {h2h['dontetlen'][1]*100:.1f}%</span>", unsafe_allow_html=True)
-                if 'vendeg' in h2h:
-                    st.markdown(f"<span class='vendeg'>✈️ {h2h['vendeg'][0]}: {h2h['vendeg'][1]*100:.1f}%</span>", unsafe_allow_html=True)
                 
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
