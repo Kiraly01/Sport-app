@@ -73,8 +73,8 @@ st.markdown(f"""
 st.write("Pipáld ki a kívánt fogadási opciókat! (A lista a holnapi meccseket mutatja)")
 
 # --- BEALLITASOK ---
-API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"  # Az új kulcsod
-KUSZOB = 0.10  # 10%-on hagyjuk, hogy lássunk mindent
+API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
+KUSZOB = 0.10  # 10%-on hagyjuk a teszthez
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -121,11 +121,14 @@ try:
                         kezdes_formazott = "Nincs idopont"
                         befejezes_formazott = "?"
                     
-                    opciok_listaja = []
+                    opciok_dict = {} # Szótár az ismétlődések kiszűréséhez
                     h2h_szazalekok = {}
                     
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
+                            if market['key'] not in ['h2h', 'totals', 'btts']: 
+                                continue # Kiszűrjük a lay/egyéb tőzsdei opciókat
+                                
                             kimenetek = market['outcomes']
                             nyers_oddsok = [k['price'] for k in kimenetek]
                             nyers_osszeg = sum([1/o for o in nyers_oddsok])
@@ -135,10 +138,7 @@ try:
                                 
                                 kimenetel_nev = ""
                                 if market['key'] == 'totals':
-                                    if 'corner' in k.get('name', '').lower():
-                                        kimenetel_nev = f"🚩 [Szöglet] {k['name']} {k.get('point', '')}"
-                                    else:
-                                        kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
+                                    kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
                                 elif market['key'] == 'btts':
                                     kimenetel_nev = f"🥅 [BTTS] Mindkét csapat szerez gólt: {k['name']}"
                                 elif market['key'] == 'h2h':
@@ -149,16 +149,18 @@ try:
                                         h2h_szazalekok['dontetlen'] = (k['name'], valoszinuseg)
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
-                                else:
-                                    kimenetel_nev = f"[{market['key']}] {k['name']}"
                                 
                                 if valoszinuseg >= KUSZOB:
-                                    opciok_listaja.append({
-                                        'opcio_nev': kimenetel_nev,
-                                        'szazalek': valoszinuseg,
-                                        'odds': k['price'],
-                                        'iroda': iroda['title']
-                                    })
+                                    # Csak akkor vesszük fel, ha még nincs ilyen nevű opció (így csak a legjobb szorzót/irodát tartja meg)
+                                    if kimenetel_nev not in opciok_dict:
+                                        opciok_dict[kimenetel_nev] = {
+                                            'opcio_nev': kimenetel_nev,
+                                            'szazalek': valoszinuseg,
+                                            'odds': k['price'],
+                                            'iroda': iroda['title']
+                                        }
+                    
+                    opciok_listaja = list(opciok_dict.values())
                     
                     if opciok_listaja:
                         opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
@@ -218,6 +220,11 @@ try:
                     st.markdown(f"<span class='dontetlen'>🤝 Döntetlen: {h2h['dontetlen'][1]*100:.1f}%</span>", unsafe_allow_html=True)
                 if 'vendeg' in h2h:
                     st.markdown(f"<span class='vendeg'>✈️ {h2h['vendeg'][0]}: {h2h['vendeg'][1]*100:.1f}%</span>", unsafe_allow_html=True)
+                
+                # Tippmix kereső gomb
+                st.markdown("---")
+                tippmix_link = f"https://www.tippmix.hu/mobil/elo/kereses?search={j['meccs'].replace(' ', '+')}"
+                st.markdown(f"[🔍 Keresés a Tippmix oldalán]({tippmix_link})")
 
     if len(kivalasztott_meccsek) > 0:
         st.markdown("---")
