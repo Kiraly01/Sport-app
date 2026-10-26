@@ -70,11 +70,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("Pipáld ki a 70% feletti opciókat, amiket meg szeretnél tenni!")
+st.write("Pipáld ki a kívánt fogadási opciókat! (A lista a holnapi meccseket mutatja)")
 
 # --- BEALLITASOK ---
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
-KUSZOB = 0.55
+KUSZOB = 0.50  # 50%-ra állítva, hogy biztosan lássunk meccseket
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -96,8 +96,9 @@ try:
 
     jeloltek = []
     
-    with st.spinner("Adatok letöltése (focihoz gólszám és BTTS is)..."):
+    with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
+            # Focira kérjük a gólokat és BTTS-t is, másra csak az 1X2-t
             markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
@@ -122,7 +123,7 @@ try:
                         befejezes_formazott = "?"
                     
                     opciok_listaja = []
-                    h2h_szazalekok = {} # Ide gyűjtjük a Hazai/Döntetlen/Vendég adatokat
+                    h2h_szazalekok = {}
                     
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
@@ -146,7 +147,7 @@ try:
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
-                                # Csak a 70% felettieket tesszük a listába
+                                # Csak a küszöb feletti opciók kerülnek be a listába
                                 if valoszinuseg >= KUSZOB:
                                     opciok_listaja.append({
                                         'opcio_nev': kimenetel_nev,
@@ -156,7 +157,6 @@ try:
                                     })
                     
                     if opciok_listaja:
-                        # Rendezzük a százalék szerint csökkenő sorrendbe
                         opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
                         jeloltek.append({
                             'sport_nev': sport.replace('_', ' ').title(),
@@ -167,14 +167,13 @@ try:
                             'h2h_adatok': h2h_szazalekok
                         })
     
-    # A lista elejére kerülnek a legjobb esélyű meccsek
     jeloltek.sort(key=lambda x: x['opciok'][0]['szazalek'], reverse=True)
     jeloltek = jeloltek[:MAX_LISTA]
     
     kivalasztott_meccsek = []
 
     if not jeloltek:
-        st.warning(f"📭 Holnap nincs olyan meccs, aminek az esélye elérné a {int(KUSZOB*100)}%-ot.")
+        st.warning(f"📭 Holnap nincs olyan meccs, aminek az esélye elérné az {int(KUSZOB*100)}%-ot.")
     else:
         st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
         
@@ -188,19 +187,17 @@ try:
                     st.markdown(f"📅 **Kezdés:** {j['kezdes']}")
                     st.markdown(f"🏁 **Várható vége:** {j['befejezes']}")
                 with col2:
-                    st.markdown(f"🏦 **Legjobb iroda:** {legjobb['iroda']}")
+                    st.markdown(f"🏦 **Iroda:** {legjobb['iroda']}")
                 
                 st.markdown("---")
-                st.write("🎯 **Választható opciók (70% felett):**")
+                st.write(f"🎯 **Választható opciók ({int(KUSZOB*100)}% felett):**")
                 
-                # Végigmegyünk a 70% feletti opciókon és pipálhatóvá tesszük őket
+                # Itt jelennek meg egymás alatt a pipálható opciók
                 for idx, opcio in enumerate(j['opciok']):
-                    # Egyedi kulcs kell a checkboxokhoz
                     cb_key = f"cb_{i}_{idx}"
-                    label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']}) [{opcio['iroda']}]"
+                    label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']})"
                     
                     if st.checkbox(label, key=cb_key):
-                        # Ha bepipáltad, hozzáadjuk a kombinációs listához
                         kivalasztott_meccsek.append({
                             'meccs': j['meccs'],
                             'valasztott_opcio': opcio['opcio_nev'],
