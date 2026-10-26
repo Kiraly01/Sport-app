@@ -34,7 +34,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚽ Napi Sport Elemzo")
-st.write("Jelöld ki a kártyákon a négyzeteket, ha kombinációt (szelvényt) szeretnél rakni!")
+st.write("A kártyákon látszik, hogy az adott tippet magában vagy kombinációban érdemes-e megtenni.")
 
 # --- BEALLITASOK ---
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
@@ -46,8 +46,10 @@ if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
 
 try:
-    holnap = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
-    url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap}T00:00:00Z&commenceTimeTo={holnap}T23:59:59Z"
+    # A holnapi dátum kiszámítása (az aktuális időhöz képest)
+    holnap_datum = (datetime.utcnow() + timedelta(days=1))
+    holnap_str = holnap_datum.strftime("%Y-%m-%d")
+    url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
     
     with st.spinner("Adatok letöltése..."):
         valasz = requests.get(url)
@@ -59,7 +61,15 @@ try:
         for m in meccsek:
             legjobb_opcio = None
             idopont_nyers = m.get('commence_time', '')
-            idopont_formazott = idopont_nyers.replace("T", " ")[:16] if idopont_nyers else "Nincs idopont"
+            
+            # Dátum és idő formázása (pl. 2026-10-26 20:00)
+            if idopont_nyers:
+                try:
+                    idopont_formazott = idopont_nyers.replace("T", " ")[:16]
+                except:
+                    idopont_formazott = idopont_nyers
+            else:
+                idopont_formazott = "Nincs idopont"
             
             for iroda in m.get('bookmakers', []):
                 for market in iroda.get('markets', []):
@@ -88,7 +98,6 @@ try:
         jeloltek.sort(key=lambda x: x['szazalek'], reverse=True)
         jeloltek = jeloltek[:MAX_LISTA]
         
-        # Itt fogjuk gyűjteni a bepipált meccseket
         kivalasztott_meccsek = []
 
         if not jeloltek:
@@ -100,8 +109,17 @@ try:
                 cim = f"{i}. {j['meccs']}  —  {j['szazalek']*100:.1f}%"
                 
                 with st.expander(cim, expanded=True):
-                    # A pipálható négyzet
-                    kivalasztva = st.checkbox(f"Kiválasztás kombinációhoz", key=f"cb_{i}")
+                    
+                    # Javaslat logika a százalék alapján
+                    if j['szazalek'] >= 0.80:
+                        st.info("💡 **Javaslat:** Ezt a tippet **magában** érdemes megtenni. Ne tedd kombinációba, mert rontja az esélyt.")
+                        javasolt_kombinacio = False
+                    elif j['szazalek'] >= 0.75:
+                        st.warning("💡 **Javaslat:** **Magában is jó**, de ha szeretnéd, kombinálhatod egy másik meccsel.")
+                        javasolt_kombinacio = True
+                    else:
+                        st.warning("💡 **Javaslat:** Ezt a tippet **csak kombinációban** érdemes megtenni (több meccsel együtt).")
+                        javasolt_kombinacio = True
                     
                     col1, col2 = st.columns(2)
                     with col1:
@@ -113,33 +131,44 @@ try:
                         st.markdown(f"🏦 **Iroda:** {j['iroda']}")
                         st.markdown(f"🔢 **Sorszám:** `{j['sorszam']}`")
                     
-                    if kivalasztva:
-                        kivalasztott_meccsek.append(j)
+                    st.markdown("---")
+                    
+                    # Kombinációs opció
+                    if javasolt_kombinacio:
+                        st.write("➕ **Kombinációs opció:**")
+                        kivalasztva = st.checkbox(f"Beteszem a kombinációba", key=f"cb_{i}")
+                        if kivalasztva:
+                            kivalasztott_meccsek.append(j)
+                    else:
+                        st.caption("Ez a tipp annyira biztos, hogy külön szelvényen is megállja a helyét.")
 
         # ==========================================
-        # KOMBINÁCIÓS KALKULÁTOR (Ha van bepipált meccs)
+        # KOMBINÁCIÓS KALKULÁTOR
         # ==========================================
         if len(kivalasztott_meccsek) > 0:
             st.markdown("---")
             st.header("🧾 Kombinációs Szelvény")
             
-            # Össz odds kiszámítása (a kiválasztottak oddsainak szorzata)
-            ossz_odds = 1.0
-            for m in kivalasztott_meccsek:
-                ossz_odds *= m['odds']
+            if len(kivalasztott_meccsek) == 1:
+                st.write("ℹ️ **Szimpla fogadás** (1 esemény)")
+                komb_esely = kivalasztott_meccsek[0]['szazalek']
+                ossz_odds = kivalasztott_meccsek[0]['odds']
+            else:
+                st.write(f"ℹ️ **Kombinációs fogadás** ({len(kivalasztott_meccsek)} esemény)")
+                komb_esely = 1.0
+                ossz_odds = 1.0
+                for m in kivalasztott_meccsek:
+                    komb_esely *= m['szazalek']
+                    ossz_odds *= m['odds']
             
-            # Tét megadása a kombinációhoz
-            komb_tet = st.number_input("Tét összege a kombinációra (Ft):", min_value=100, value=1000, step=500, key="komb_tet")
+            komb_tet = st.number_input("Tét összege (Ft):", min_value=100, value=1000, step=500, key="komb_tet")
             varhato_nyeremeny = komb_tet * ossz_odds
             
-            # Kiírás
-            st.info(f"Kiválasztott események száma: **{len(kivalasztott_meccsek)} db**")
-            
-            # Listázás
             for m in kivalasztott_meccsek:
-                st.write(f"- {m['meccs']} ({m['opcio']}) | Sorszám: `{m['sorszam']}` | Odds: {m['odds']}")
+                st.write(f"- {m['meccs']} ({m['opcio']}) | Sorszám: `{m['sorszam']}`")
             
-            st.success(f"📈 **Összesített Odds:** {ossz_odds:.2f}")
+            st.info(f"📈 **Összesített Odds:** {ossz_odds:.2f}")
+            st.info(f"🎯 **Kombinált Esély (%):** {komb_esely*100:.1f}% (Veszteség esélye: {(1-komb_esely)*100:.1f}%)")
             st.success(f"💰 **Várható Nyeremény:** {varhato_nyeremeny:.0f} Ft (Nettó: +{varhato_nyeremeny - komb_tet:.0f} Ft)")
             
     else:
