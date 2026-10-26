@@ -74,7 +74,7 @@ st.write("Pipáld ki a 70% feletti opciókat, amiket meg szeretnél tenni!")
 
 # --- BEALLITASOK ---
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
-KUSZOB = 0.70  
+KUSZOB = 0.65
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
