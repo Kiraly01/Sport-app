@@ -51,14 +51,18 @@ st.markdown("""
         letter-spacing: 1px;
         box-shadow: 0px 4px 15px rgba(0, 212, 255, 0.1);
     }
+    
+    /* Százalékok színezése */
+    .hazai { color: #4ade80; font-weight: bold; }
+    .dontetlen { color: #facc15; font-weight: bold; }
+    .vendeg { color: #f87171; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# Középre igazított cím
 st.markdown("<h1>🏆 Napi Sport Elemzo</h1>", unsafe_allow_html=True)
 
 # ==========================================
-# ÓRA (Statikus, Python oldali idő)
+# ÓRA
 # ==========================================
 aktualis_ido = datetime.now()
 st.markdown(f"""
@@ -73,7 +77,7 @@ st.write("A lista a **másnapi** mérkőzéseket mutatja, ahol az esély eléri 
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
 KUSZOB = 0.70  
 MAX_LISTA = 10 
-MAX_KOMBI = 3  # Maximum ennyi meccs lehet egy kombinációban
+MAX_KOMBI = 3  
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
@@ -82,6 +86,7 @@ try:
     holnap_datum = (datetime.utcnow() + timedelta(days=1))
     holnap_str = holnap_datum.strftime("%Y-%m-%d")
     
+    # Itt kérjük be az includeSids=true-t a sorszámokhoz!
     sports_url = f"https://api.the-odds-api.com/v4/sports/?apiKey={API_KEY}"
     sports_valasz = requests.get(sports_url)
     
@@ -95,7 +100,8 @@ try:
     
     with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
-            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
+            # A végére betettük az includeSids=true-t
+            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z&includeSids=true"
             
             valasz = requests.get(url)
             
@@ -104,13 +110,15 @@ try:
                 
                 for m in meccsek:
                     legjobb_opcio = None
+                    legjobb_szazalek = 0
+                    kimenetek_szazalekai = {}
+                    
                     idopont_nyers = m.get('commence_time', '')
                     
                     if idopont_nyers:
                         try:
                             kezdes_dt = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ")
                             befejezes_dt = kezdes_dt + timedelta(hours=2)
-                            
                             kezdes_formazott = kezdes_dt.strftime("%Y-%m-%d %H:%M")
                             befejezes_formazott = befejezes_dt.strftime("%H:%M")
                         except Exception:
@@ -128,20 +136,32 @@ try:
                                     nyers_oddsok = [k['price'] for k in kimenetek]
                                     nyers_osszeg = sum([1/o for o in nyers_oddsok])
                                     
+                                    # Kiszámoljuk az összes kimenetel százalékát
                                     for k in kimenetek:
                                         valoszinuseg = (1 / k['price']) / nyers_osszeg
-                                        if valoszinuseg >= KUSZOB:
-                                            if legjobb_opcio is None or valoszinuseg > legjobb_opcio['szazalek']:
-                                                legjobb_opcio = {
-                                                    'sport_nev': sport.replace('_', ' ').title(),
-                                                    'meccs': f"{m['home_team']} - {m['away_team']}",
-                                                    'opcio': k['name'],
-                                                    'szazalek': valoszinuseg,
-                                                    'odds': k['price'],
-                                                    'iroda': iroda['title'],
-                                                    'kezdes': kezdes_formazott,
-                                                    'befejezes': befejezes_formazott
-                                                }
+                                        kimenetek_szazalekai[k['name']] = valoszinuseg
+                                        
+                                        # Keressük a legjobbat
+                                        if valoszinuseg >= KUSZOB and valoszinuseg > legjobb_szazalek:
+                                            legjobb_szazalek = valoszinuseg
+                                            
+                                            # Próbáljuk kinyerni a fogadóiroda sorszámát (sid)
+                                            sorszam = "Nincs adat"
+                                            if 'sid' in iroda and k.get('name') in iroda.get('sid', {}):
+                                                sorszam = iroda['sid'][k['name']]
+                                            
+                                            legjobb_opcio = {
+                                                'sport_nev': sport.replace('_', ' ').title(),
+                                                'meccs': f"{m['home_team']} - {m['away_team']}",
+                                                'opcio': k['name'],
+                                                'szazalek': valoszinuseg,
+                                                'odds': k['price'],
+                                                'iroda': iroda['title'],
+                                                'sorszam': sorszam,
+                                                'kezdes': kezdes_formazott,
+                                                'befejezes': befejezes_formazott,
+                                                'osszes_kimenetel': kimenetek_szazalekai
+                                            }
                     if legjobb_opcio:
                         jeloltek.append(legjobb_opcio)
     
@@ -176,6 +196,20 @@ try:
                     st.markdown(f"📊 **Esély:** {j['szazalek']*100:.1f}%")
                     st.markdown(f"💰 **Odds:** {j['odds']:.2f}")
                     st.markdown(f"🏦 **Iroda:** {j['iroda']}")
+                    st.markdown(f"🔢 **Sorszám:** `{j['sorszam']}`")
+                
+                st.markdown("---")
+                st.markdown("**Meccs kimenetelei (%):**")
+                
+                # Itt jelenítjük meg a Hazai / Döntetlen / Vendég opciókat
+                kimenetek = j['osszes_kimenetel']
+                for nev, szazalek in kimenetek.items():
+                    if nev == m['home_team'] or "Home" in nev:
+                        st.markdown(f"<span class='hazai'>🏠 {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
+                    elif nev == "Draw" or "Döntetlen" in nev:
+                        st.markdown(f"<span class='dontetlen'>🤝 {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<span class='vendeg'>✈️ {nev}: {szazalek*100:.1f}%</span>", unsafe_allow_html=True)
                 
                 st.markdown("---")
                 
@@ -191,9 +225,8 @@ try:
         st.markdown("---")
         st.header("🧾 Kombinációs Szelvény")
         
-        # Itt jön a 3 meccses limit ellenőrzése
         if len(kivalasztott_meccsek) > MAX_KOMBI:
-            st.error(f"⚠️ **FIGYELEM!** Túl sok meccset választottál ki ({len(kivalasztott_meccsek)} db). A biztonságos kombinációhoz **maximum {MAX_KOMBI} meccs** javasolt! Kérlek, vegyél ki legalább {len(kivalasztott_meccsek) - MAX_KOMBI} meccset a listából.")
+            st.error(f"⚠️ **FIGYELEM!** Túl sok meccset választottál ki ({len(kivalasztott_meccsek)} db). A biztonságos kombinációhoz **maximum {MAX_KOMBI} meccs** javasolt! Kérlek, vegyél ki legalább {len(kivalasztott_meccsek) - MAX_KOMBI} meccset.")
         else:
             if len(kivalasztott_meccsek) == 1:
                 st.write("ℹ️ **Szimpla fogadás** (1 esemény)")
