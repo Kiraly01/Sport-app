@@ -70,7 +70,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **30% feletti** legjobb esélyű opciókat mutatja (teszt üzemmód).")
+st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja (teszt üzemmód).")
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
