@@ -55,6 +55,9 @@ st.markdown("""
     .hazai { color: #4ade80; font-weight: bold; }
     .dontetlen { color: #facc15; font-weight: bold; }
     .vendeg { color: #f87171; font-weight: bold; }
+    .magaban { color: #4ade80; font-size: 0.9em; font-weight: bold; }
+    .kombi { color: #facc15; font-size: 0.9em; font-weight: bold; }
+    .csak_kombi { color: #f87171; font-size: 0.9em; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -70,11 +73,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja (teszt üzemmód).")
+st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja.")
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.70 # Teszt érték, hogy lássunk mindent
+KUSZOB = 0.70  # Visszaállítva 70%-ra
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -98,7 +101,6 @@ try:
     
     with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
-            # A focihoz kérjük a BTTS-t és a Gólszámot is
             markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
@@ -139,7 +141,6 @@ try:
                             for k in kimenetek:
                                 valoszinuseg = (1 / k['price']) / nyers_osszeg
                                 
-                                # Szép, olvasható nevek beállítása
                                 kimenetel_nev = ""
                                 if market['key'] == 'totals':
                                     kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
@@ -154,12 +155,10 @@ try:
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
-                                # Megkeressük a meccs legerősebb opcióját a szűréshez és rendezéshez
                                 if valoszinuseg > legjobb_opcio_esely:
                                     legjobb_opcio_esely = valoszinuseg
                                     legjobb_opcio_neve = kimenetel_nev
                                 
-                                # Eltároljuk az opciót (csak a legjobb oddsot tartjuk meg irodánként)
                                 if kimenetel_nev not in opciok_dict:
                                     opciok_dict[kimenetel_nev] = {
                                         'opcio_nev': kimenetel_nev,
@@ -168,7 +167,6 @@ try:
                                         'iroda': iroda['title']
                                     }
                     
-                    # A meccs csak akkor kerül be, ha a legjobb esélye eléri a küszöböt
                     if legjobb_opcio_esely >= KUSZOB:
                         opciok_listaja = list(opciok_dict.values())
                         opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
@@ -195,7 +193,6 @@ try:
         st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
         
         for i, j in enumerate(jeloltek, 1):
-            # A kártya címe a legjobb opciót mutatja (pl. Gólszám vagy 1X2)
             cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
             with st.expander(cim, expanded=True):
@@ -209,8 +206,18 @@ try:
                 st.markdown("---")
                 st.write("🎯 **Választható opciók (a legjobb százaléktól lefelé):**")
                 
-                # Itt már MINDEN opció megjelenik (BTTS, Gólszám, 1X2) a saját százalékával!
                 for idx, opcio in enumerate(j['opciok']):
+                    # Javaslat szöveg meghatározása az esély alapján
+                    if opcio['szazalek'] >= 0.80:
+                        javaslat = "<span class='magaban'>💡 Magában javasolt</span>"
+                    elif opcio['szazalek'] >= 0.70:
+                        javaslat = "<span class='kombi'>⚠️ Magában is jó, de kombinálható</span>"
+                    else:
+                        javaslat = "<span class='csak_kombi'>🔗 Csak kombinációban javasolt</span>"
+                    
+                    # Megjelenítjük a javaslatot az opció felett
+                    st.markdown(javaslat, unsafe_allow_html=True)
+                    
                     cb_key = f"cb_{i}_{idx}"
                     label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']})"
                     
