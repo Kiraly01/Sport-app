@@ -10,7 +10,7 @@ st.write("A lista a fogadoirodak szorzoibol szamolt valoszinusegeket mutatja. Ne
 # --- BEALLITASOK ---
 API_KEY = "058f2a77969ebea27f4dcdeb19290442"
 SPORT = "soccer"
-KUSZOB = 0.74  # Csak a 80% feletti meccseket mutatja
+KUSZOB = 0.65  # Csak a 80% feletti meccseket mutatja
 MAX_LISTA = 10 # Max ennyi meccset listáz
 
 if st.button("🔄 Adatok frissítése"):
