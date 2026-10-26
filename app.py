@@ -74,7 +74,7 @@ st.write("A lista a **30% feletti** legjobb esélyű opciókat mutatja (teszt ü
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.30  # Teszt érték, hogy lássunk mindent
+KUSZOB = 0.70 # Teszt érték, hogy lássunk mindent
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
