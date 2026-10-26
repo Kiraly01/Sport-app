@@ -70,11 +70,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("Pipáld ki a kívánt fogadási opciókat! (A lista a holnapi meccseket mutatja)")
+st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja. Nyisd le őket a részletekért!")
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.10  # 10%-on hagyjuk a teszthez
+KUSZOB = 0.70  # Csak a 70% feletti opciók kerülnek be a listába
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -123,6 +123,8 @@ try:
                     
                     opciok_dict = {}
                     h2h_szazalekok = {}
+                    legjobb_opcio_esely = 0
+                    legjobb_opcio_neve = ""
                     
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
@@ -150,41 +152,49 @@ try:
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
-                                if valoszinuseg >= KUSZOB:
-                                    if kimenetel_nev not in opciok_dict:
-                                        opciok_dict[kimenetel_nev] = {
-                                            'opcio_nev': kimenetel_nev,
-                                            'szazalek': valoszinuseg,
-                                            'odds': k['price'],
-                                            'iroda': iroda['title']
-                                        }
+                                # Mentjük a legjobb opciót a meccshez (ez alapján szűrünk és rendezünk)
+                                if valoszinuseg > legjobb_opcio_esely:
+                                    legjobb_opcio_esely = valoszinuseg
+                                    legjobb_opcio_neve = kimenetel_nev
+                                
+                                if kimenetel_nev not in opciok_dict:
+                                    opciok_dict[kimenetel_nev] = {
+                                        'opcio_nev': kimenetel_nev,
+                                        'szazalek': valoszinuseg,
+                                        'odds': k['price'],
+                                        'iroda': iroda['title']
+                                    }
                     
-                    opciok_listaja = list(opciok_dict.values())
-                    
-                    if opciok_listaja:
-                        opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
+                    # Csak akkor kerül be a listára, ha a legjobb opciója eléri a 70%-ot
+                    if legjobb_opcio_esely >= KUSZOB:
+                        opciok_listaja = list(opciok_dict.values())
+                        opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True) # Opciók rendezése
+                        
                         jeloltek.append({
                             'sport_nev': sport.replace('_', ' ').title(),
                             'meccs': f"{m['home_team']} - {m['away_team']}",
                             'kezdes': kezdes_formazott,
                             'befejezes': befejezes_formazott,
+                            'legjobb_esely': legjobb_opcio_esely,
+                            'legjobb_opcio_neve': legjobb_opcio_neve,
                             'opciok': opciok_listaja,
                             'h2h_adatok': h2h_szazalekok
                         })
     
-    jeloltek.sort(key=lambda x: x['opciok'][0]['szazalek'], reverse=True)
+    # A listát a meccsek legjobb esélye szerint rendezzük (a legnagyobb százalék lesz legfelül)
+    jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
     jeloltek = jeloltek[:MAX_LISTA]
     
     kivalasztott_meccsek = []
 
     if not jeloltek:
-        st.warning(f"📭 Holnap nincs olyan meccs, aminek az esélye elérné az {int(KUSZOB*100)}%-ot.")
+        st.warning(f"📭 Holnap nincs olyan opció, aminek az esélye elérné a {int(KUSZOB*100)}%-ot.")
     else:
-        st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
+        st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő esély található.")
         
         for i, j in enumerate(jeloltek, 1):
-            legjobb = j['opciok'][0]
-            cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {legjobb['szazalek']*100:.1f}%"
+            # A kártya címe mindig a legjobb opciót mutatja (pl. BTTS vagy 1X2)
+            cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
             with st.expander(cim, expanded=True):
                 col1, col2 = st.columns(2)
@@ -192,10 +202,10 @@ try:
                     st.markdown(f"📅 **Kezdés:** {j['kezdes']}")
                     st.markdown(f"🏁 **Várható vége:** {j['befejezes']}")
                 with col2:
-                    st.markdown(f"🏦 **Iroda:** {legjobb['iroda']}")
+                    st.markdown(f"🏦 **Legjobb iroda:** {j['opciok'][0]['iroda']}")
                 
                 st.markdown("---")
-                st.write(f"🎯 **Választható opciók ({int(KUSZOB*100)}% felett):**")
+                st.write("🎯 **Választható opciók (a legjobb százaléktól lefelé):**")
                 
                 for idx, opcio in enumerate(j['opciok']):
                     cb_key = f"cb_{i}_{idx}"
@@ -220,7 +230,6 @@ try:
                 if 'vendeg' in h2h:
                     st.markdown(f"<span class='vendeg'>✈️ {h2h['vendeg'][0]}: {h2h['vendeg'][1]*100:.1f}%</span>", unsafe_allow_html=True)
                 
-                # Tippmix gomb (főoldalra visz)
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
