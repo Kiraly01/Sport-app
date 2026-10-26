@@ -73,13 +73,22 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja.")
+st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja a legnépszerűbb sportágakból.")
 
 # --- BEALLITASOK ---
-API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.70  # Visszaállítva 70%-ra
+API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"  # Az új kulcsod
+KUSZOB = 0.70  
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
+
+# Csak ezeket a sportágakat kérjük le, hogy kíméljük az API limitet!
+SPORTS_TO_FETCH = [
+    "soccer",              # Foci
+    "basketball_nba",      # Kosárlabda (NBA)
+    "tennis_atp",          # Tenisz (ATP)
+    "icehockey_nhl",       # Jégkorong (NHL)
+    "americanfootball_nfl" # Amerikai foci (NFL)
+]
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
@@ -88,19 +97,10 @@ try:
     holnap_datum = (datetime.utcnow() + timedelta(days=1))
     holnap_str = holnap_datum.strftime("%Y-%m-%d")
     
-    sports_url = f"https://api.the-odds-api.com/v4/sports/?apiKey={API_KEY}"
-    sports_valasz = requests.get(sports_url)
-    
-    if sports_valasz.status_code == 200:
-        osszes_sport = sports_valasz.json()
-        aktiv_sportok = [s['key'] for s in osszes_sport if not s.get('has_outrights', True)]
-    else:
-        aktiv_sportok = []
-
     jeloltek = []
     
-    with st.spinner("Adatok letöltése az összes sportágból..."):
-        for sport in aktiv_sportok:
+    with st.spinner("Adatok letöltése a kiválasztott sportágakból..."):
+        for sport in SPORTS_TO_FETCH:
             markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
@@ -207,7 +207,6 @@ try:
                 st.write("🎯 **Választható opciók (a legjobb százaléktól lefelé):**")
                 
                 for idx, opcio in enumerate(j['opciok']):
-                    # Javaslat szöveg meghatározása az esély alapján
                     if opcio['szazalek'] >= 0.80:
                         javaslat = "<span class='magaban'>💡 Magában javasolt</span>"
                     elif opcio['szazalek'] >= 0.70:
@@ -215,7 +214,6 @@ try:
                     else:
                         javaslat = "<span class='csak_kombi'>🔗 Csak kombinációban javasolt</span>"
                     
-                    # Megjelenítjük a javaslatot az opció felett
                     st.markdown(javaslat, unsafe_allow_html=True)
                     
                     cb_key = f"cb_{i}_{idx}"
