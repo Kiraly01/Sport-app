@@ -73,7 +73,7 @@ st.markdown(f"""
 st.write("Pipáld ki a kívánt fogadási opciókat! (A lista a holnapi meccseket mutatja)")
 
 # --- BEALLITASOK ---
-API_KEY = "058f2a77969ebea27f4dcdeb19290442"
+API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
 KUSZOB = 0.10 # 50%-ra állítva, hogy biztosan lássunk meccseket
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
