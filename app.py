@@ -70,11 +70,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja. Nyisd le őket a részletekért!")
+st.write("A lista a **30% feletti** legjobb esélyű opciókat mutatja (teszt üzemmód).")
 
 # --- BEALLITASOK ---
 API_KEY = "0fcabfac8f0456197fcea9cb9f3097d2"
-KUSZOB = 0.30 # Csak a 70% feletti opciók kerülnek be a listába
+KUSZOB = 0.30  # Teszt érték, hogy lássunk mindent
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -98,6 +98,7 @@ try:
     
     with st.spinner("Adatok letöltése az összes sportágból..."):
         for sport in aktiv_sportok:
+            # A focihoz kérjük a BTTS-t és a Gólszámot is
             markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
             url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
@@ -138,6 +139,7 @@ try:
                             for k in kimenetek:
                                 valoszinuseg = (1 / k['price']) / nyers_osszeg
                                 
+                                # Szép, olvasható nevek beállítása
                                 kimenetel_nev = ""
                                 if market['key'] == 'totals':
                                     kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
@@ -152,11 +154,12 @@ try:
                                     else:
                                         h2h_szazalekok['vendeg'] = (k['name'], valoszinuseg)
                                 
-                                # Mentjük a legjobb opciót a meccshez (ez alapján szűrünk és rendezünk)
+                                # Megkeressük a meccs legerősebb opcióját a szűréshez és rendezéshez
                                 if valoszinuseg > legjobb_opcio_esely:
                                     legjobb_opcio_esely = valoszinuseg
                                     legjobb_opcio_neve = kimenetel_nev
                                 
+                                # Eltároljuk az opciót (csak a legjobb oddsot tartjuk meg irodánként)
                                 if kimenetel_nev not in opciok_dict:
                                     opciok_dict[kimenetel_nev] = {
                                         'opcio_nev': kimenetel_nev,
@@ -165,10 +168,10 @@ try:
                                         'iroda': iroda['title']
                                     }
                     
-                    # Csak akkor kerül be a listára, ha a legjobb opciója eléri a 70%-ot
+                    # A meccs csak akkor kerül be, ha a legjobb esélye eléri a küszöböt
                     if legjobb_opcio_esely >= KUSZOB:
                         opciok_listaja = list(opciok_dict.values())
-                        opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True) # Opciók rendezése
+                        opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
                         
                         jeloltek.append({
                             'sport_nev': sport.replace('_', ' ').title(),
@@ -181,7 +184,6 @@ try:
                             'h2h_adatok': h2h_szazalekok
                         })
     
-    # A listát a meccsek legjobb esélye szerint rendezzük (a legnagyobb százalék lesz legfelül)
     jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
     jeloltek = jeloltek[:MAX_LISTA]
     
@@ -190,10 +192,10 @@ try:
     if not jeloltek:
         st.warning(f"📭 Holnap nincs olyan opció, aminek az esélye elérné a {int(KUSZOB*100)}%-ot.")
     else:
-        st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő esély található.")
+        st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
         
         for i, j in enumerate(jeloltek, 1):
-            # A kártya címe mindig a legjobb opciót mutatja (pl. BTTS vagy 1X2)
+            # A kártya címe a legjobb opciót mutatja (pl. Gólszám vagy 1X2)
             cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
             with st.expander(cim, expanded=True):
@@ -207,6 +209,7 @@ try:
                 st.markdown("---")
                 st.write("🎯 **Választható opciók (a legjobb százaléktól lefelé):**")
                 
+                # Itt már MINDEN opció megjelenik (BTTS, Gólszám, 1X2) a saját százalékával!
                 for idx, opcio in enumerate(j['opciok']):
                     cb_key = f"cb_{i}_{idx}"
                     label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']})"
