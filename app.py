@@ -70,14 +70,16 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **70% feletti** legjobb esélyű opciókat mutatja a legnépszerűbb sportágakból.")
+st.write("A lista a legbiztonságosabb holnapi tippeket mutatja. A foci élvez prioritást!")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB = 0.70  
+KUSZOB_MIN = 0.70  # 70% alatt nem vesszük fel
+KUSZOB_KIEMELKEDO = 0.80  # 80% felett kiemelkedő
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
+# Csak a legfontosabb sportágak
 SPORTS_TO_FETCH = [
     "soccer",              
     "basketball_nba",      
@@ -156,9 +158,14 @@ try:
                                         'iroda': iroda['title']
                                     }
                     
-                    if legjobb_opcio_esely >= KUSZOB:
+                    if legjobb_opcio_esely >= KUSZOB_MIN:
                         opciok_listaja = list(opciok_dict.values())
                         opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
+                        
+                        # Meghatározzuk, hogy kiemelkedő-e (80% felett)
+                        szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
+                        # Prioritás: a foci (soccer) kap 1-est, a többi 2-est, hogy a foci legfelül legyen
+                        sport_prioritas = 1 if sport == "soccer" else 2
                         
                         jeloltek.append({
                             'sport_nev': sport.replace('_', ' ').title(),
@@ -167,28 +174,40 @@ try:
                             'befejezes': befejezes_formazott,
                             'legjobb_esely': legjobb_opcio_esely,
                             'legjobb_opcio_neve': legjobb_opcio_neve,
-                            'opciok': opciok_listaja
+                            'opciok': opciok_listaja,
+                            'szint': szint,
+                            'sport_prioritas': sport_prioritas
                         })
     
-    jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
+    # Rendezés: Elsőként a szint (1 = kiemelkedő, 2 = jó), aztán a sport (1 = foci), aztán az esély
+    jeloltek.sort(key=lambda x: (x['szint'], x['sport_prioritas'], -x['legjobb_esely']))
     jeloltek = jeloltek[:MAX_LISTA]
     
     kivalasztott_meccsek = []
 
     if not jeloltek:
-        st.warning(f"📭 Holnap nincs olyan opció, aminek az esélye elérné a {int(KUSZOB*100)}%-ot.")
+        st.warning(f"📭 Holnap nincs olyan opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ Holnap {len(jeloltek)} kiemelkedő meccs felel meg a felteteleknek.")
+        kiemelkedo_db = sum(1 for j in jeloltek if j['szint'] == 1)
+        jo_db = sum(1 for j in jeloltek if j['szint'] == 2)
+        st.success(f"✅ Holnap {kiemelkedo_db} kiemelkedő (⭐) és {jo_db} jó lehetőség (🟡) van a listán.")
         
         for i, j in enumerate(jeloltek, 1):
-            cim = f"{i}. [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
+            # Címke hozzáadása a szint alapján
+            jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
+            cim = f"{i}. {jelzes} | [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
-            with st.expander(cim, expanded=True):
-                st.markdown(f"📅 **Kezdés:** {j['kezdes']} | 🏁 **Várható vége:** {j['befejezes']} | 🏦 **Iroda:** {j['opciok'][0]['iroda']}")
+            with st.expander(cim, expanded=False): # Alapból csukva, hogy ne legyen óriási a lista
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"📅 **Kezdés:** {j['kezdes']}")
+                    st.markdown(f"🏁 **Várható vége:** {j['befejezes']}")
+                with col2:
+                    st.markdown(f"🏦 **Legjobb iroda:** {j['opciok'][0]['iroda']}")
+                
                 st.markdown("---")
                 st.write("🎯 **Választható opciók:**")
                 
-                # Itt már a Hazai/Vendég/Döntetlen is benne van a pipálható listában!
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.80:
                         javaslat = "<span class='magaban'>💡 Magában javasolt</span>"
