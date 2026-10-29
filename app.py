@@ -51,11 +51,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **legjobb 3 holnapi foci meccset** mutatja részletes opciókkal. A küszöb **30%**.")
+st.write("A lista a **legjobb 3 holnapi foci meccset** mutatja részletes opciókkal. A küszöb **10%** (teszt).")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.30  
+KUSZOB_MIN = 0.10  # 10%-ra levéve a teszthez
 KUSZOB_KIEMELKEDO = 0.75  
 MAX_LISTA = 3  # Csak a top 3 meccset tartjuk meg
 MAX_KOMBI = 3  
@@ -119,7 +119,6 @@ try:
         with st.spinner("2. lépés: Részletes opciók (BTTS, Gólszám) letöltése a kiválasztott meccsekre..."):
             for m in top_3_meccs:
                 event_id = m['id']
-                # Esemény-specifikus végpont használata a BTTS-hez és Gólszámhoz
                 url_event = f"https://api.the-odds-api.com/v4/sports/soccer/events/{event_id}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts&oddsFormat=decimal"
                 valasz_event = requests.get(url_event)
                 
@@ -157,7 +156,6 @@ try:
                                         'iroda': iroda['title']
                                     }
                 else:
-                    # Ha a részletes lekérés hibát dob, visszaesünk az alap 1X2-re
                     st.warning(f"A részletes opciók lekérése nem sikerült ennél: {m['home_team']} - {m['away_team']}")
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
@@ -206,7 +204,7 @@ try:
             jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
             cim = f"{jelzes} | {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
-            with st.expander(cim, expanded=True): # Alapból nyitva, hogy lásd a részleteket
+            with st.expander(cim, expanded=True):
                 st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 10px;'>📅 Kezdés: <b>{j['kezdes']}</b> &nbsp;|&nbsp; 🏦 Legjobb iroda: <b>{j['opciok'][0]['iroda']}</b></div>", unsafe_allow_html=True)
                 
                 st.markdown("---")
@@ -214,7 +212,7 @@ try:
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.75:
                         javaslat = "<span class='magaban'>Magában javasolt</span>"
-                    elif opcio['szazalek'] >= 0.30:
+                    elif opcio['szazalek'] >= 0.10:
                         javaslat = "<span class='kombi'>Kombinálható</span>"
                     else:
                         javaslat = "<span class='csak_kombi'>Csak kombinációban</span>"
