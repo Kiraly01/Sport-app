@@ -6,7 +6,7 @@ import pytz
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v10", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v11", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -44,7 +44,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v10)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v11)</h1>", unsafe_allow_html=True)
 
 # ÓRA
 hu_tz = pytz.timezone('Europe/Budapest')
@@ -120,7 +120,7 @@ try:
 
     vegso_lista = []
     if top_3_meccs:
-        with st.spinner("2. lépés: Extra opciók letöltése..."):
+        with st.spinner("2. lépés: Extra opciók letöltése (5Dollar API)..."):
             for m in top_3_meccs:
                 hazai = m['home_team']
                 vendeg = m['away_team']
@@ -135,6 +135,50 @@ try:
                                 elif k['name'] == vendeg: h2h_odds['vendeg'] = k['price']
                                 elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
 
+                # 5DollarFootballAPI extra opciók (csak top-5 liga)
+                extra_opciok = []
+                if m.get('sport_key') in TOP_5_LEAGUES:
+                    try:
+                        headers_5d = {'Authorization': f'Bearer {FIVE_DOLLAR_API_KEY}'}
+                        datum_str = m['kezdes_hu'].strftime("%Y-%m-%d")
+                        
+                        # 1. Megkeressük az 5Dollar fixture ID-t a dátum alapján
+                        # A dokumentáció szerint a /v1/fixtures végpont adja a meccseket
+                        res_fixtures = requests.get(f"https://api.5dollarfootballapi.com/v1/fixtures?start_time={datum_str}", headers=headers_5d).json()
+                        
+                        fixture_id_5d = None
+                        if 'data' in res_fixtures:
+                            for fix in res_fixtures['data']:
+                                # Egyszerű csapatnév egyeztetés (kis/nagybetűtől függetlenül)
+                                home_5d = fix['teams']['home']['name'].lower()
+                                away_5d = fix['teams']['away']['name'].lower()
+                                if hazai.lower() in home_5d and vendeg.lower() in away_5d:
+                                    fixture_id_5d = fix['id']
+                                    break
+                        
+                        # 2. Ha megvan az ID, lekérjük az oddsokat
+                        if fixture_id_5d:
+                            res_odds = requests.get(f"https://api.5dollarfootballapi.com/v1/fixtures/{fixture_id_5d}/odds", headers=headers_5d).json()
+                            if 'data' in res_odds:
+                                # A válaszban a Bet365 oddsai vannak (a dokumentáció szerint)
+                                # Kinyerjük a BTTS-t és a gólvonalat, ha vannak
+                                odds_data = res_odds['data']
+                                if 'bet365' in odds_data:
+                                    b365 = odds_data['bet365']
+                                    # BTTS
+                                    if 'btts' in b365 and b365['btts'].get('closing'):
+                                        btts = b365['btts']['closing']
+                                        extra_opciok.append({'nev': f"BTTS - Igen", 'odds': btts.get('yes', '-')})
+                                        extra_opciok.append({'nev': f"BTTS - Nem", 'odds': btts.get('no', '-')})
+                                    # Gólszám (over/under 2.5)
+                                    if 'goal_line' in b365 and b365['goal_line'].get('closing'):
+                                        gl = b365['goal_line']['closing']
+                                        # A goal_line általában egy lista, de itt egyszerűsítünk
+                                        extra_opciok.append({'nev': f"Több mint 2.5 gól", 'odds': gl.get('over', '-')})
+                                        extra_opciok.append({'nev': f"Kevesebb mint 2.5 gól", 'odds': gl.get('under', '-')})
+                    except Exception:
+                        pass # Ha hiba van, nem jelenítünk meg extra opciót
+
                 idopont_formazott = m['kezdes_hu'].strftime("%Y-%m-%d %H:%M")
                 
                 vegso_lista.append({
@@ -142,6 +186,7 @@ try:
                     'kezdes': idopont_formazott,
                     'legjobb_esely': m['legjobb_esely_1x2'],
                     'oddsok': h2h_odds,
+                    'extra_opciok': extra_opciok,
                     'hazai': hazai,
                     'vendeg': vendeg
                 })
@@ -174,6 +219,19 @@ try:
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': f"{j['vendeg']} (Vendég)", 'odds': j['oddsok'].get('vendeg', 1.0)})
 
                 st.markdown("---")
+                
+                if j['extra_opciok']:
+                    st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>További opciók:</div>", unsafe_allow_html=True)
+                    for idx, opcio in enumerate(j['extra_opciok']):
+                        col_e1, col_e2 = st.columns([8, 2])
+                        with col_e1:
+                            if st.button(f"{opcio['nev']}", key=f"extra_{i}_{idx}"):
+                                st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': opcio['nev'], 'odds': opcio['odds']})
+                        with col_e2:
+                            st.markdown(f"<div style='text-align:right; font-size:1.2em; font-weight:bold; color:#FACC15; padding-top:5px;'>{opcio['odds']}</div>", unsafe_allow_html=True)
+                else:
+                    st.caption("Ehhez a meccshez nincs extra opció (vagy nem top-5 liga).")
+
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
     # --- KOMBINÁCIÓS SZELVÉNY ---
