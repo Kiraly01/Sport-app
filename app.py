@@ -1,11 +1,12 @@
 import streamlit as st
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
+import pytz  # Szükség van rá az időzónához!
 
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v2", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v3", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -41,10 +42,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v2)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v3)</h1>", unsafe_allow_html=True)
 
-# ÓRA
-aktualis_ido = datetime.now()
+# ==========================================
+# ÓRA (Magyar időzónával)
+# ==========================================
+hu_tz = pytz.timezone('Europe/Budapest')
+aktualis_ido = datetime.now(hu_tz)
 st.markdown(f"""
     <div class="clock-container">
         <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
@@ -55,7 +59,7 @@ st.write("A lista a **legjobb, még el nem kezdődött foci meccseket** mutatja.
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.65  # 65%-os küszöb
+KUSZOB_MIN = 0.65  
 KUSZOB_KIEMELKEDO = 0.75  
 MAX_LISTA = 3  
 MAX_KOMBI = 3  
@@ -65,28 +69,30 @@ if st.button("🔄 Adatok frissítése"):
 
 try:
     jeloltek = []
-    most = datetime.utcnow()  # Az aktuális idő (UTC-ben, mert az API is így adja)
+    # Az aktuális magyar idő (összehasonlításhoz)
+    most_hu = datetime.now(hu_tz)
     
     with st.spinner("1. lépés: Jövőbeli foci meccsek listájának letöltése..."):
-        # 1. Csak az 1X2-t kérjük le, dátum szűrés nélkül
         url_base = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
         valasz = requests.get(url_base)
         
         if valasz.status_code == 200:
             meccsek = valasz.json()
             
-            # Kiszűrjük a jövőbeli meccseket és kiszámoljuk a legjobb esélyt
             for m in meccsek:
                 idopont_nyers = m.get('commence_time', '')
                 if not idopont_nyers: continue
                 try:
-                    kezdes_dt = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ")
+                    # Az API UTC időt ad, ezt alakítjuk magyar idővé
+                    kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
+                    kezdes_hu = kezdes_utc.astimezone(hu_tz)
                     
-                    # SZŰRÉS: Csak a jövőbeli meccsek (amik még nem kezdődtek el)
-                    if kezdes_dt <= most:
+                    # SZŰRÉS: Csak a jövőbeli meccsek (magyar idő szerint)
+                    if kezdes_hu <= most_hu:
                         continue
                         
-                except: continue
+                except Exception:
+                    continue
                 
                 legjobb_esely = 0
                 for iroda in m.get('bookmakers', []):
@@ -102,9 +108,9 @@ try:
                 
                 if legjobb_esely >= KUSZOB_MIN:
                     m['legjobb_esely_1x2'] = legjobb_esely
+                    m['kezdes_hu'] = kezdes_hu
                     jeloltek.append(m)
             
-            # Rendezzük a legjobb esély szerint, és csak a top 3-at tartjuk meg
             jeloltek.sort(key=lambda x: x['legjobb_esely_1x2'], reverse=True)
             top_3_meccs = jeloltek[:MAX_LISTA]
             
@@ -112,7 +118,6 @@ try:
             st.error(f"Hiba az alap API-val: {valasz.status_code} - {valasz.text}")
             top_3_meccs = []
 
-    # 3. A top 3 meccsre külön lekérjük a BTTS-t és a gólszámokat
     vegso_lista = []
     if top_3_meccs:
         with st.spinner("2. lépés: Részletes opciók (BTTS, Gólszám) letöltése..."):
@@ -155,7 +160,7 @@ try:
                                         'iroda': iroda['title']
                                     }
                 else:
-                    # Ha a részletes lekérés hibát dob, csendben visszaesünk az alap 1X2-re
+                    # Visszaesés az alap 1X2-re hiba esetén
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
                             if market['key'] == 'h2h':
@@ -181,7 +186,8 @@ try:
                     opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
                     szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
                     
-                    idopont_formazott = datetime.strptime(m['commence_time'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M")
+                    # A magyar időpont formázása
+                    idopont_formazott = m['kezdes_hu'].strftime("%Y-%m-%d %H:%M")
                     
                     vegso_lista.append({
                         'meccs': f"{m['home_team']} - {m['away_team']}",
@@ -197,7 +203,7 @@ try:
     if not vegso_lista:
         st.warning(f"📭 Nincs olyan jövőbeli foci opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ A legjobb {len(vegso_lista)} jövőbeli foci meccs:")
+        st.success(f"✅ A legjobb {len(vegso_lista)} jövőbeli foci meccs (magyar idő szerint):")
         
         for i, j in enumerate(vegso_lista, 1):
             jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
