@@ -51,7 +51,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **holnapi** foci tippeket mutatja részletes opciókkal. A küszöb **30%** (teszt üzemmód).")
+st.write("A lista a **holnapi** foci tippeket mutatja. A küszöb **30%** (teszt üzemmód).")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
@@ -60,7 +60,7 @@ KUSZOB_KIEMELKEDO = 0.75
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
-# Kiszámoljuk a holnapi dátumot a szűréshez
+# Holnapi dátum kiszámítása a szűréshez
 holnap_datum = (datetime.utcnow() + timedelta(days=1)).date()
 
 if st.button("🔄 Adatok frissítése"):
@@ -69,8 +69,8 @@ if st.button("🔄 Adatok frissítése"):
 try:
     jeloltek = []
     
-    with st.spinner("Foci adatok letöltése (összes elérhető meccs)..."):
-        # Dátum nélküli kérés, hogy a BTTS és a Gólszámok is lejöjjenek
+    with st.spinner("Foci adatok letöltése..."):
+        # Dátum NÉLKÜLI kérés (hogy a BTTS és a gólszámok is lejöjjenek)
         url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts&oddsFormat=decimal"
         
         valasz = requests.get(url)
@@ -169,7 +169,7 @@ try:
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.75:
                         javaslat = "<span class='magaban'>Magában javasolt</span>"
-                    elif opcio['szazalek'] >= 0.50:
+                    elif opcio['szazalek'] >= 0.30:  # 30%-os teszt miatt
                         javaslat = "<span class='kombi'>Kombinálható</span>"
                     else:
                         javaslat = "<span class='csak_kombi'>Csak kombinációban</span>"
