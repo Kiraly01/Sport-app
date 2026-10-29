@@ -3,62 +3,109 @@ import requests
 from datetime import datetime, timedelta
 
 # ==========================================
-# MODERN KINÉZET (CSS)
+# TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo", page_icon="🏆", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #0E1117; }
-    h1, h2, h3 { color: #ffffff; font-family: 'Helvetica Neue', sans-serif; font-weight: 700; text-align: center; }
-    
-    .streamlit-expanderHeader {
-        background-color: #1E2129 !important; border-radius: 10px !important;
-        color: #00D4FF !important; font-weight: bold !important; font-size: 1.1em !important;
-        border: 1px solid #333 !important; padding: 10px !important;
+    /* Általános sötét háttér */
+    .stApp {
+        background-color: #12161A;
+        color: #E0E0E0;
     }
+    
+    /* Címek letisztítása */
+    h1, h2, h3 {
+        color: #FFFFFF;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    /* A kártyák (expanderek) - Tippmix stílusú sötét dobozok */
+    .streamlit-expanderHeader {
+        background-color: #1E252B !important;
+        border-radius: 4px !important;
+        color: #FACC15 !important; /* Tippmix sárga */
+        font-weight: 600 !important;
+        font-size: 1.05em !important;
+        border: 1px solid #333 !important;
+        padding: 12px 15px !important;
+        margin-bottom: 5px;
+    }
+    
     .streamlit-expanderContent {
-        background-color: #161A22 !important; border: 1px solid #333 !important;
-        border-top: none !important; border-bottom-left-radius: 10px !important; border-bottom-right-radius: 10px !important;
+        background-color: #1A1F24 !important;
+        border: 1px solid #333 !important;
+        border-top: none !important;
+        border-bottom-left-radius: 4px !important;
+        border-bottom-right-radius: 4px !important;
         padding: 15px !important;
     }
-    .stButton>button {
-        background-color: #00D4FF; color: #000000; font-weight: bold; border-radius: 8px;
-        border: none; padding: 10px 24px; transition: 0.3s;
-    }
-    .stButton>button:hover { background-color: #0099cc; color: #ffffff; }
-    .stNumberInput>div>div>input {
-        background-color: #1E2129; color: white; border: 1px solid #00D4FF; border-radius: 5px;
-    }
-    .stAlert { background-color: #1c3322; color: #4ade80; border: 1px solid #4ade80; border-radius: 8px; }
     
+    /* Gombok */
+    .stButton>button {
+        background-color: #FACC15; /* Tippmix sárga */
+        color: #000000;
+        font-weight: bold;
+        border-radius: 4px;
+        border: none;
+        padding: 10px 24px;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        background-color: #EAB308;
+        color: #000000;
+    }
+    
+    /* Checkboxok (pipák) */
+    .stCheckbox {
+        background-color: #242B33;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        border: 1px solid #333;
+    }
+    .stCheckbox:hover {
+        border: 1px solid #FACC15;
+    }
+    
+    /* Óra */
     .clock-container {
         display: flex;
         justify-content: center;
         align-items: center;
         margin-top: 10px;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     .live-clock {
         font-family: 'Courier New', Courier, monospace;
         font-size: 1.2em;
-        color: #00D4FF;
-        background-color: #1E2129;
-        padding: 15px 30px;
-        border-radius: 12px;
-        border: 2px solid #333;
+        color: #FACC15;
+        background-color: #1E252B;
+        padding: 10px 20px;
+        border-radius: 4px;
+        border: 1px solid #333;
         font-weight: bold;
-        letter-spacing: 1px;
-        box-shadow: 0px 4px 15px rgba(0, 212, 255, 0.1);
     }
     
-    .magaban { color: #4ade80; font-size: 0.9em; font-weight: bold; }
-    .kombi { color: #facc15; font-size: 0.9em; font-weight: bold; }
-    .csak_kombi { color: #f87171; font-size: 0.9em; font-weight: bold; }
+    /* Javaslat színek */
+    .magaban { color: #22C55E; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+    .kombi { color: #FACC15; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+    .csak_kombi { color: #EF4444; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+    
+    /* Info dobozok */
+    .stAlert {
+        background-color: #1E252B;
+        color: #E0E0E0;
+        border-left: 4px solid #FACC15;
+        border-radius: 4px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>🏆 Napi Sport Elemzo</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo</h1>", unsafe_allow_html=True)
 
 # ==========================================
 # ÓRA
@@ -70,23 +117,16 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a legbiztonságosabb holnapi tippeket mutatja. A foci élvez prioritást!")
+st.write("A lista a legbiztonságosabb holnapi foci tippeket mutatja. A küszöb 75%!")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.70  # 70% alatt nem vesszük fel
-KUSZOB_KIEMELKEDO = 0.80  # 80% felett kiemelkedő
+KUSZOB_MIN = 0.75  
+KUSZOB_KIEMELKEDO = 0.80  
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
-# Csak a legfontosabb sportágak
-SPORTS_TO_FETCH = [
-    "soccer",              
-    "basketball_nba",      
-    "tennis_atp",          
-    "icehockey_nhl",       
-    "americanfootball_nfl" 
-]
+SPORTS_TO_FETCH = ["soccer"]
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
@@ -97,10 +137,9 @@ try:
     
     jeloltek = []
     
-    with st.spinner("Adatok letöltése a kiválasztott sportágakból..."):
+    with st.spinner("Foci adatok letöltése..."):
         for sport in SPORTS_TO_FETCH:
-            markets_to_fetch = "h2h,totals,btts" if sport == "soccer" else "h2h"
-            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets={markets_to_fetch}&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
+            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
             
             valasz = requests.get(url)
             
@@ -162,74 +201,73 @@ try:
                         opciok_listaja = list(opciok_dict.values())
                         opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
                         
-                        # Meghatározzuk, hogy kiemelkedő-e (80% felett)
                         szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
-                        # Prioritás: a foci (soccer) kap 1-est, a többi 2-est, hogy a foci legfelül legyen
-                        sport_prioritas = 1 if sport == "soccer" else 2
                         
                         jeloltek.append({
-                            'sport_nev': sport.replace('_', ' ').title(),
+                            'sport_nev': 'Foci',
                             'meccs': f"{m['home_team']} - {m['away_team']}",
                             'kezdes': kezdes_formazott,
                             'befejezes': befejezes_formazott,
                             'legjobb_esely': legjobb_opcio_esely,
                             'legjobb_opcio_neve': legjobb_opcio_neve,
                             'opciok': opciok_listaja,
-                            'szint': szint,
-                            'sport_prioritas': sport_prioritas
+                            'szint': szint
                         })
     
-    # Rendezés: Elsőként a szint (1 = kiemelkedő, 2 = jó), aztán a sport (1 = foci), aztán az esély
-    jeloltek.sort(key=lambda x: (x['szint'], x['sport_prioritas'], -x['legjobb_esely']))
+    jeloltek.sort(key=lambda x: (x['szint'], -x['legjobb_esely']))
     jeloltek = jeloltek[:MAX_LISTA]
     
     kivalasztott_meccsek = []
 
     if not jeloltek:
-        st.warning(f"📭 Holnap nincs olyan opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
+        st.warning(f"📭 Holnap nincs olyan foci opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
         kiemelkedo_db = sum(1 for j in jeloltek if j['szint'] == 1)
         jo_db = sum(1 for j in jeloltek if j['szint'] == 2)
         st.success(f"✅ Holnap {kiemelkedo_db} kiemelkedő (⭐) és {jo_db} jó lehetőség (🟡) van a listán.")
         
         for i, j in enumerate(jeloltek, 1):
-            # Címke hozzáadása a szint alapján
             jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
-            cim = f"{i}. {jelzes} | [{j['sport_nev']}] {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
+            cim = f"{jelzes} | {j['meccs']}  —  {j['legjobb_opcio_neve']} ({j['legjobb_esely']*100:.1f}%)"
             
-            with st.expander(cim, expanded=False): # Alapból csukva, hogy ne legyen óriási a lista
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown(f"📅 **Kezdés:** {j['kezdes']}")
-                    st.markdown(f"🏁 **Várható vége:** {j['befejezes']}")
-                with col2:
-                    st.markdown(f"🏦 **Legjobb iroda:** {j['opciok'][0]['iroda']}")
+            with st.expander(cim, expanded=False):
+                st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 10px;'>📅 Kezdés: <b>{j['kezdes']}</b> &nbsp;|&nbsp; 🏦 Legjobb iroda: <b>{j['opciok'][0]['iroda']}</b></div>", unsafe_allow_html=True)
                 
                 st.markdown("---")
-                st.write("🎯 **Választható opciók:**")
                 
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.80:
-                        javaslat = "<span class='magaban'>💡 Magában javasolt</span>"
-                    elif opcio['szazalek'] >= 0.70:
-                        javaslat = "<span class='kombi'>⚠️ Magában is jó, de kombinálható</span>"
+                        javaslat = "<span class='magaban'>Magában javasolt</span>"
+                    elif opcio['szazalek'] >= 0.75:
+                        javaslat = "<span class='kombi'>Kombinálható</span>"
                     else:
-                        javaslat = "<span class='csak_kombi'>🔗 Csak kombinációban javasolt</span>"
+                        javaslat = "<span class='csak_kombi'>Csak kombinációban</span>"
                     
-                    st.markdown(javaslat, unsafe_allow_html=True)
-                    
+                    # Sorrend: Checkbox -> Opció neve és javaslat -> Odds
                     cb_key = f"cb_{i}_{idx}"
-                    label = f"{opcio['opcio_nev']} — {opcio['szazalek']*100:.1f}% (odds: {opcio['odds']})"
                     
-                    if st.checkbox(label, key=cb_key):
-                        kivalasztott_meccsek.append({
-                            'meccs': j['meccs'],
-                            'valasztott_opcio': opcio['opcio_nev'],
-                            'szazalek': opcio['szazalek'],
-                            'odds': opcio['odds']
-                        })
-                
-                st.markdown("---")
+                    # Oszlopok kialakítása a Tippmix stílushoz
+                    col_check, col_info, col_odds = st.columns([1, 6, 2])
+                    
+                    with col_check:
+                        # A checkbox maga
+                        if st.checkbox("", key=cb_key, label_visibility="collapsed"):
+                            kivalasztott_meccsek.append({
+                                'meccs': j['meccs'],
+                                'valasztott_opcio': opcio['opcio_nev'],
+                                'szazalek': opcio['szazalek'],
+                                'odds': opcio['odds']
+                            })
+                    
+                    with col_info:
+                        st.markdown(f"<div style='font-size: 1em; color: #FFFFFF;'>{opcio['opcio_nev']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"{javaslat} &nbsp;|&nbsp; <span style='color:#A0AAB5;'>Esély: {opcio['szazalek']*100:.1f}%</span>", unsafe_allow_html=True)
+                        
+                    with col_odds:
+                        st.markdown(f"<div style='font-size: 1.2em; font-weight: bold; color: #FACC15; text-align: right;'>{opcio['odds']:.2f}</div>", unsafe_allow_html=True)
+                        
+                    st.markdown("<hr style='margin: 5px 0; border-color: #333;'>", unsafe_allow_html=True)
+
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
     if len(kivalasztott_meccsek) > 0:
