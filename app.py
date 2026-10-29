@@ -121,7 +121,7 @@ st.write("A lista a legbiztonságosabb holnapi foci tippeket mutatja. A küszöb
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.65  # 65%-ra levittük!
+KUSZOB_MIN = 0.40  # 65%-ra levittük!
 KUSZOB_KIEMELKEDO = 0.75  # 75% felett kiemelkedő
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
