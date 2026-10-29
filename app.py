@@ -13,7 +13,6 @@ st.markdown("""
     .stApp { background-color: #12161A; color: #E0E0E0; }
     h1, h2, h3 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 600; text-align: center; }
     
-    /* Kártyák */
     .streamlit-expanderHeader {
         background-color: #1E252B !important; border-radius: 4px !important;
         color: #FACC15 !important; font-weight: 600 !important; font-size: 1.1em !important;
@@ -25,18 +24,15 @@ st.markdown("""
         padding: 15px !important;
     }
     
-    /* Gombok */
     .stButton>button {
         background-color: #FACC15; color: #000000; font-weight: bold; border-radius: 4px;
         border: none; padding: 10px 24px; width: 100%;
     }
     .stButton>button:hover { background-color: #EAB308; color: #000000; }
     
-    /* Checkbox stílus */
     .stCheckbox { background-color: #242B33; padding: 8px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #333; }
     .stCheckbox:hover { border: 1px solid #FACC15; }
     
-    /* Óra */
     .clock-container { display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 20px; }
     .live-clock {
         font-family: 'Courier New', monospace; font-size: 1.2em; color: #FACC15;
@@ -44,7 +40,6 @@ st.markdown("""
         border: 1px solid #333; font-weight: bold;
     }
     
-    /* Statisztika dobozok */
     .stat-box {
         background-color: #1E252B;
         border-left: 3px solid #FACC15;
@@ -58,7 +53,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v4)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v4 Teszt)</h1>", unsafe_allow_html=True)
 
 # ==========================================
 # ÓRA
@@ -71,12 +66,12 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **legjobb, még el nem kezdődött foci meccseket** mutatja, statisztikákkal!")
+st.write("A lista a **legjobb jövőbeli foci meccseket** mutatja (10% teszt küszöb), statisztikákkal!")
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
 FOOTBALL_API_KEY = "ae5c4a38a960b9d414fccc18d7f1434d"
-KUSZOB_MIN = 0.65  
+KUSZOB_MIN = 0.10  # 10%-ra levéve a teszthez
 KUSZOB_KIEMELKEDO = 0.75  
 MAX_LISTA = 3  
 MAX_KOMBI = 3  
@@ -127,7 +122,6 @@ try:
             st.error(f"Hiba a The Odds API-nál: {valasz.status_code}")
             top_3_meccs = []
 
-    # --- 2. LÉPÉS: Részletes opciók ÉS Statisztikák ---
     vegso_lista = []
     if top_3_meccs:
         with st.spinner("2. lépés: Opciók és statisztikák (Forma, H2H) letöltése..."):
@@ -136,7 +130,6 @@ try:
                 hazai = m['home_team']
                 vendeg = m['away_team']
                 
-                # Alap opciók (The Odds API)
                 opciok_dict = {}
                 legjobb_opcio_esely = 0
                 
@@ -162,7 +155,6 @@ try:
                                 if kimenetel_nev not in opciok_dict:
                                     opciok_dict[kimenetel_nev] = {'opcio_nev': kimenetel_nev, 'szazalek': valoszinuseg, 'odds': k['price'], 'iroda': iroda['title']}
                 else:
-                    # Visszaesés alap 1X2-re
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
                             if market['key'] == 'h2h':
@@ -187,7 +179,6 @@ try:
                 
                 headers = {'x-rapidapi-key': FOOTBALL_API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
                 
-                # Forma lekérése (utolsó 5 meccs)
                 try:
                     url_form_h = f"https://v3.football.api-sports.io/fixtures?team={hazai}&last=5"
                     url_form_v = f"https://v3.football.api-sports.io/fixtures?team={vendeg}&last=5"
@@ -195,7 +186,6 @@ try:
                     res_h = requests.get(url_form_h, headers=headers).json()
                     res_v = requests.get(url_form_v, headers=headers).json()
                     
-                    # Megszámoljuk a győzelmeket (egyszerűsített forma)
                     def szamol_gyozelem(res, csapat_nev):
                         if 'response' not in res or not res['response']: return "Nincs adat", 0
                         gyozelem = 0
@@ -209,14 +199,12 @@ try:
                     forma_hazai, gyozelem_h = szamol_gyozelem(res_h, hazai)
                     forma_vendeg, gyozelem_v = szamol_gyozelem(res_v, vendeg)
                     
-                    # Egyszerű statisztikai esély a forma alapján
                     if gyozelem_h + gyozelem_v > 0:
                         stat_esely_hazai = gyozelem_h / (gyozelem_h + gyozelem_v)
                         
-                except Exception as e:
-                    pass # Ha hiba van, marad a "Nincs adat"
+                except Exception:
+                    pass
                 
-                # H2H lekérése
                 try:
                     url_h2h = f"https://v3.football.api-sports.io/fixtures/headtohead?h2h={hazai}-{vendeg}&last=5"
                     res_h2h = requests.get(url_h2h, headers=headers).json()
@@ -231,7 +219,7 @@ try:
                                 if fixture['teams']['away']['winner']: h_gyozelem += 1
                                 elif fixture['teams']['home']['winner']: v_gyozelem += 1
                         h2h_szoveg = f"H: {h_gyozelem} - V: {v_gyozelem}"
-                except Exception as e:
+                except Exception:
                     pass
                 
                 szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
@@ -254,17 +242,15 @@ try:
     if not vegso_lista:
         st.warning(f"📭 Nincs olyan jövőbeli foci opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ A legjobb {len(vegso_lista)} jövőbeli foci meccs (statisztikákkal):")
+        st.success(f"✅ A legjobb {len(vegso_lista)} jövőbeli foci meccs:")
         
         for i, j in enumerate(vegso_lista, 1):
             jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
             cim = f"{jelzes} | {j['meccs']}  —  {j['legjobb_esely']*100:.1f}%"
             
             with st.expander(cim, expanded=True):
-                # Fejléc info
                 st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                 
-                # --- STATISZTIKA DOBOZ ---
                 st.markdown(f"""
                     <div class="stat-box">
                         <div style="margin-bottom: 5px;"><span class="stat-label">📊 Forma (utolsó 5 meccs):</span></div>
@@ -276,10 +262,9 @@ try:
                 
                 st.markdown("---")
                 
-                # --- OPCIÓK (Tippmix stílus) ---
                 for idx, opcio in enumerate(j['opciok']):
                     if opcio['szazalek'] >= 0.75: javaslat = "<span style='color:#22C55E;font-size:0.8em;font-weight:bold;'>MAGÁBAN JAVASOLT</span>"
-                    elif opcio['szazalek'] >= 0.65: javaslat = "<span style='color:#FACC15;font-size:0.8em;font-weight:bold;'>KOMBINÁLHATÓ</span>"
+                    elif opcio['szazalek'] >= 0.10: javaslat = "<span style='color:#FACC15;font-size:0.8em;font-weight:bold;'>KOMBINÁLHATÓ</span>"
                     else: javaslat = "<span style='color:#EF4444;font-size:0.8em;font-weight:bold;'>CSAK KOMBINÁCIÓBAN</span>"
                     
                     cb_key = f"cb_{i}_{idx}"
