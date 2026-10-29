@@ -6,7 +6,7 @@ import pytz
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v5", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v6", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -45,23 +45,22 @@ st.markdown("""
     .stat-value { color: #FACC15; font-size: 1.1em; font-weight: bold; }
     .value-bet { color: #22C55E; font-weight: bold; }
     
-    /* Nagy gombok a Tippmix stílushoz */
-    .odds-grid {
-        display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;
+    /* Tippmix stílusú nagy gombok */
+    div[data-testid="column"] {
+        background-color: #242B33;
+        border-radius: 6px;
+        padding: 5px;
+        border: 1px solid #333;
     }
-    .odds-button {
-        flex: 1; background-color: #242B33; border: 1px solid #333;
-        border-radius: 6px; padding: 10px; text-align: center; cursor: pointer;
-    }
-    .odds-button:hover { border-color: #FACC15; }
-    .odds-label { color: #A0AAB5; font-size: 0.8em; margin-bottom: 5px; }
-    .odds-value { color: #FACC15; font-size: 1.3em; font-weight: bold; }
+    div[data-testid="column"]:hover { border-color: #FACC15; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v5)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v6)</h1>", unsafe_allow_html=True)
 
+# ==========================================
 # ÓRA
+# ==========================================
 hu_tz = pytz.timezone('Europe/Budapest')
 aktualis_ido = datetime.now(hu_tz)
 st.markdown(f"""
@@ -80,22 +79,19 @@ KUSZOB_KIEMELKEDO = 0.75
 MAX_LISTA = 3  
 MAX_KOMBI = 3  
 
-# Azok a ligák, amikre az API-Football biztosan ad statisztikát
-TOP_LIGAK = [
-    "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a", 
-    "soccer_germany_bundesliga", "soccer_france_ligue_one", 
-    "soccer_uefa_champs_league"
-]
+# Session state inicializálása a kiválasztott tippekhez
+if "kivalasztott_tippek" not in st.session_state:
+    st.session_state.kivalasztott_tippek = []
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
+    st.session_state.kivalasztott_tippek = [] # Töröljük a kiválasztást frissítéskor
 
 try:
     jeloltek = []
     most_hu = datetime.now(hu_tz)
     
     with st.spinner("1. lépés: Jövőbeli foci meccsek letöltése..."):
-        # Lekérjük az összes foci meccset
         url_base = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
         valasz = requests.get(url_base)
         
@@ -112,10 +108,6 @@ try:
                     kezdes_hu = kezdes_utc.astimezone(hu_tz)
                     if kezdes_hu <= most_hu: continue
                 except: continue
-                
-                # Szűrés: csak a nagy ligák (hogy legyen statisztika)
-                if m.get('sport_key') not in TOP_LIGAK:
-                    continue
                 
                 legjobb_esely = 0
                 for iroda in m.get('bookmakers', []):
@@ -142,7 +134,7 @@ try:
 
     vegso_lista = []
     if top_3_meccs:
-        with st.spinner("2. lépés: Opciók és statisztikák (Forma, H2H) letöltése..."):
+        with st.spinner("2. lépés: Opciók és statisztikák letöltése..."):
             for m in top_3_meccs:
                 hazai = m['home_team']
                 vendeg = m['away_team']
@@ -155,7 +147,6 @@ try:
                 
                 headers = {'x-rapidapi-key': FOOTBALL_API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
                 
-                # Forma lekérése
                 try:
                     url_form_h = f"https://v3.football.api-sports.io/fixtures?team={hazai}&last=5"
                     url_form_v = f"https://v3.football.api-sports.io/fixtures?team={vendeg}&last=5"
@@ -180,7 +171,6 @@ try:
                         stat_esely_hazai = gyozelem_h / (gyozelem_h + gyozelem_v)
                 except Exception: pass
                 
-                # H2H lekérése
                 try:
                     url_h2h = f"https://v3.football.api-sports.io/fixtures/headtohead?h2h={hazai}-{vendeg}&last=5"
                     res_h2h = requests.get(url_h2h, headers=headers).json()
@@ -196,7 +186,7 @@ try:
                         h2h_szoveg = f"H: {h_gy} - V: {v_gy}"
                 except Exception: pass
 
-                # Opciók kinyerése az 1X2-höz (Nagy gombokhoz)
+                # Opciók kinyerése az 1X2-höz
                 h2h_odds = {}
                 for iroda in m.get('bookmakers', []):
                     for market in iroda.get('markets', []):
@@ -235,7 +225,6 @@ try:
             with st.expander(cim, expanded=True):
                 st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                 
-                # Statisztika doboz
                 st.markdown(f"""
                     <div class="stat-box">
                         <div style="margin-bottom: 5px;"><span class="stat-label">📊 Forma (utolsó 5 meccs):</span></div>
@@ -246,24 +235,48 @@ try:
                 """, unsafe_allow_html=True)
                 
                 st.markdown("---")
+                st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>Válassz kimenetelt:</div>", unsafe_allow_html=True)
                 
                 # Tippmix stílusú nagy gombok
-                st.markdown("<div class='odds-grid'>", unsafe_allow_html=True)
-                
                 col1, col2, col3 = st.columns(3)
-                with col1:
-                    if st.button(f"🏠 Hazai\n{j['oddsok'].get('hazai', '-')}", key=f"h_{i}"):
-                        st.session_state[f"valasztott_{i}"] = "Hazai"
-                with col2:
-                    if st.button(f"🤝 Döntetlen\n{j['oddsok'].get('dontetlen', '-')}", key=f"d_{i}"):
-                        st.session_state[f"valasztott_{i}"] = "Döntetlen"
-                with col3:
-                    if st.button(f"✈️ Vendég\n{j['oddsok'].get('vendeg', '-')}", key=f"v_{i}"):
-                        st.session_state[f"valasztott_{i}"] = "Vendég"
                 
-                st.markdown("</div>", unsafe_allow_html=True)
+                with col1:
+                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Hazai</div>", unsafe_allow_html=True)
+                    if st.button(f"{j['oddsok'].get('hazai', '-')}", key=f"h_{i}"):
+                        if "hazai" not in [t['opcio'] for t in st.session_state.kivalasztott_tippek if t['meccs'] == j['meccs']]:
+                            st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': 'hazai', 'odds': j['oddsok'].get('hazai', 0), 'szazalek': 0.0})
+                with col2:
+                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Döntetlen</div>", unsafe_allow_html=True)
+                    if st.button(f"{j['oddsok'].get('dontetlen', '-')}", key=f"d_{i}"):
+                        if "dontetlen" not in [t['opcio'] for t in st.session_state.kivalasztott_tippek if t['meccs'] == j['meccs']]:
+                            st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': 'dontetlen', 'odds': j['oddsok'].get('dontetlen', 0), 'szazalek': 0.0})
+                with col3:
+                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Vendég</div>", unsafe_allow_html=True)
+                    if st.button(f"{j['oddsok'].get('vendeg', '-')}", key=f"v_{i}"):
+                        if "vendeg" not in [t['opcio'] for t in st.session_state.kivalasztott_tippek if t['meccs'] == j['meccs']]:
+                            st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': 'vendeg', 'odds': j['oddsok'].get('vendeg', 0), 'szazalek': 0.0})
 
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
+
+    # --- KOMBINÁCIÓS SZELVÉNY ---
+    if len(st.session_state.kivalasztott_tippek) > 0:
+        st.markdown("---")
+        st.header("🧾 Kombinációs Szelvény")
+        
+        if len(st.session_state.kivalasztott_tippek) > MAX_KOMBI:
+            st.error(f"⚠️ **FIGYELEM!** Túl sok opciót választottál ki. Maximum {MAX_KOMBI} opció javasolt!")
+        else:
+            ossz_odds = 1.0
+            for t in st.session_state.kivalasztott_tippek:
+                st.write(f"- {t['meccs']} ➡️ **{t['opcio'].capitalize()}** (Odds: {t['odds']})")
+                ossz_odds *= t['odds']
+            
+            st.info(f"📈 **Összesített Odds:** {ossz_odds:.2f}")
+            st.success(f"💰 **Várható Nyeremény (1000 Ft-ból):** {1000 * ossz_odds:.0f} Ft")
+            
+            if st.button("🗑️ Kiválasztott tippek törlése"):
+                st.session_state.kivalasztott_tippek = []
+                st.experimental_rerun()
 
 except Exception as e:
     st.error("Váratlan hiba történt: " + str(e))
