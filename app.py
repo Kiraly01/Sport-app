@@ -117,12 +117,12 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a legbiztonságosabb holnapi foci tippeket mutatja. A küszöb 75%!")
+st.write("A lista a legbiztonságosabb holnapi foci tippeket mutatja. A küszöb **65%**.")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.75  
-KUSZOB_KIEMELKEDO = 0.80  
+KUSZOB_MIN = 0.65  # 65%-ra levittük!
+KUSZOB_KIEMELKEDO = 0.75  # 75% felett kiemelkedő
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
@@ -236,21 +236,18 @@ try:
                 st.markdown("---")
                 
                 for idx, opcio in enumerate(j['opciok']):
-                    if opcio['szazalek'] >= 0.80:
+                    if opcio['szazalek'] >= 0.75:
                         javaslat = "<span class='magaban'>Magában javasolt</span>"
-                    elif opcio['szazalek'] >= 0.75:
+                    elif opcio['szazalek'] >= 0.65:
                         javaslat = "<span class='kombi'>Kombinálható</span>"
                     else:
                         javaslat = "<span class='csak_kombi'>Csak kombinációban</span>"
                     
-                    # Sorrend: Checkbox -> Opció neve és javaslat -> Odds
                     cb_key = f"cb_{i}_{idx}"
                     
-                    # Oszlopok kialakítása a Tippmix stílushoz
                     col_check, col_info, col_odds = st.columns([1, 6, 2])
                     
                     with col_check:
-                        # A checkbox maga
                         if st.checkbox("", key=cb_key, label_visibility="collapsed"):
                             kivalasztott_meccsek.append({
                                 'meccs': j['meccs'],
