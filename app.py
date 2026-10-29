@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v2", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -41,7 +41,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v2)</h1>", unsafe_allow_html=True)
 
 # ÓRA
 aktualis_ido = datetime.now()
