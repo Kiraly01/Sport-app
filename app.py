@@ -6,7 +6,7 @@ import pytz
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v9", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v10", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -37,13 +37,6 @@ st.markdown("""
         border: 1px solid #333; font-weight: bold;
     }
     
-    .stat-box {
-        background-color: #1E252B; border-left: 3px solid #FACC15;
-        padding: 10px; margin-bottom: 15px; border-radius: 4px;
-    }
-    .stat-label { color: #A0AAB5; font-size: 0.85em; }
-    .stat-value { color: #FACC15; font-size: 1.1em; font-weight: bold; }
-    
     div[data-testid="column"] {
         background-color: #242B33; border-radius: 6px; padding: 5px; border: 1px solid #333;
     }
@@ -51,7 +44,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v9)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v10)</h1>", unsafe_allow_html=True)
 
 # ÓRA
 hu_tz = pytz.timezone('Europe/Budapest')
@@ -62,12 +55,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **legjobb jövőbeli foci meccseket** mutatja (10% teszt). A top-5 ligában extra opciók és statisztikák is vannak!")
+st.write("A lista a **legjobb jövőbeli foci meccseket** mutatja (10% teszt). A top-5 ligában extra opciók is vannak!")
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
 FIVE_DOLLAR_API_KEY = "fb_live_693hvNiBbMfswhfmjsh4FSKDUJiJikw6"
-OPENFOOT_API_KEY = "of_live_313eabc100ef4a29fa7172b619cc3f8f49a983a6e5569a992bfacc86f10b4729"
 KUSZOB_MIN = 0.10
 MAX_LISTA = 3  
 MAX_KOMBI = 3  
@@ -128,12 +120,12 @@ try:
 
     vegso_lista = []
     if top_3_meccs:
-        with st.spinner("2. lépés: Statisztikák és extra opciók letöltése..."):
+        with st.spinner("2. lépés: Extra opciók letöltése..."):
             for m in top_3_meccs:
                 hazai = m['home_team']
                 vendeg = m['away_team']
                 
-                # 1. Alap 1X2 opciók kinyerése a The Odds API-ból
+                # Alap 1X2 opciók kinyerése
                 h2h_odds = {}
                 for iroda in m.get('bookmakers', []):
                     for market in iroda.get('markets', []):
@@ -143,48 +135,6 @@ try:
                                 elif k['name'] == vendeg: h2h_odds['vendeg'] = k['price']
                                 elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
 
-                # 2. OpenFoot statisztikák (Forma, Elo, H2H)
-                forma_szoveg = "Nincs adat"
-                elo_szoveg = "Nincs adat"
-                h2h_szoveg = "Nincs adat"
-                
-                try:
-                    # OpenFoot meccs keresése dátum és csapatnevek alapján
-                    datum_str = m['kezdes_hu'].strftime("%Y-%m-%d")
-                    headers_of = {'Authorization': f'Bearer {OPENFOOT_API_KEY}', 'Accept': 'application/json'}
-                    res_matches = requests.get(f"https://openfootapi.com/v1/matches?date={datum_str}", headers=headers_of).json()
-                    
-                    if 'data' in res_matches:
-                        for of_match in res_matches['data']:
-                            # Egyszerű csapatnév egyeztetés
-                            if hazai.lower() in of_match['homeTeam']['name'].lower() and vendeg.lower() in of_match['awayTeam']['name'].lower():
-                                match_id = of_match['id']
-                                # Context lekérése
-                                res_ctx = requests.get(f"https://openfootapi.com/v1/matches/{match_id}/context", headers=headers_of).json()
-                                if 'data' in res_ctx:
-                                    ctx = res_ctx['data']
-                                    if 'form' in ctx:
-                                        forma_szoveg = f"H: {ctx['form'].get('home', '-')} | V: {ctx['form'].get('away', '-')}"
-                                    if 'elo' in ctx:
-                                        elo_szoveg = f"H: {ctx['elo'].get('home', '-')} | V: {ctx['elo'].get('away', '-')}"
-                                    if 'headToHead' in ctx:
-                                        h2h_szoveg = f"H: {ctx['headToHead'].get('homeWins', 0)} - V: {ctx['headToHead'].get('awayWins', 0)}"
-                                break
-                except Exception:
-                    pass
-
-                # 3. 5DollarFootballAPI extra opciók (BTTS, Gólszám)
-                extra_opciok = []
-                if m.get('sport_key') in TOP_5_LEAGUES:
-                    try:
-                        headers_5d = {'Authorization': f'Bearer {FIVE_DOLLAR_API_KEY}'}
-                        # Itt a dokumentáció szerinti fixture_odds végpontot használjuk
-                        # Mivel az 5Dollar API saját ID-t használ, egyelőre csak jelzésértékűen próbáljuk
-                        # (A teljes ID egyeztetés túl bonyolult lenne ehhez a verzióhoz)
-                        pass 
-                    except Exception:
-                        pass
-
                 idopont_formazott = m['kezdes_hu'].strftime("%Y-%m-%d %H:%M")
                 
                 vegso_lista.append({
@@ -192,12 +142,8 @@ try:
                     'kezdes': idopont_formazott,
                     'legjobb_esely': m['legjobb_esely_1x2'],
                     'oddsok': h2h_odds,
-                    'extra_opciok': extra_opciok,
                     'hazai': hazai,
-                    'vendeg': vendeg,
-                    'forma': forma_szoveg,
-                    'elo': elo_szoveg,
-                    'h2h': h2h_szoveg
+                    'vendeg': vendeg
                 })
 
     if not vegso_lista:
@@ -211,16 +157,6 @@ try:
             with st.expander(cim, expanded=True):
                 st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                 
-                # Statisztika doboz
-                st.markdown(f"""
-                    <div class="stat-box">
-                        <div style="margin-bottom: 5px;"><span class="stat-label">📊 Forma:</span> <span class="stat-value">{j['forma']}</span></div>
-                        <div style="margin-bottom: 5px;"><span class="stat-label">⚡ Elo:</span> <span class="stat-value">{j['elo']}</span></div>
-                        <div><span class="stat-label">⚔️ H2H:</span> <span class="stat-value">{j['h2h']}</span></div>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("---")
                 st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>Fő kimenetelek:</div>", unsafe_allow_html=True)
                 
                 col1, col2, col3 = st.columns(3)
@@ -238,19 +174,6 @@ try:
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': f"{j['vendeg']} (Vendég)", 'odds': j['oddsok'].get('vendeg', 1.0)})
 
                 st.markdown("---")
-                
-                if j['extra_opciok']:
-                    st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>További opciók:</div>", unsafe_allow_html=True)
-                    for idx, opcio in enumerate(j['extra_opciok']):
-                        col_e1, col_e2 = st.columns([8, 2])
-                        with col_e1:
-                            if st.button(f"{opcio['nev']}", key=f"extra_{i}_{idx}"):
-                                st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': opcio['nev'], 'odds': opcio['odds']})
-                        with col_e2:
-                            st.markdown(f"<div style='text-align:right; font-size:1.2em; font-weight:bold; color:#FACC15; padding-top:5px;'>{opcio['odds']}</div>", unsafe_allow_html=True)
-                else:
-                    st.caption("Ehhez a meccshez nincs extra opció (vagy nem top-5 liga).")
-
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
     # --- KOMBINÁCIÓS SZELVÉNY ---
