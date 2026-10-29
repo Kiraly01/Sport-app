@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
@@ -51,7 +51,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **legjobb 3 holnapi foci meccset** mutatja részletes opciókkal. A küszöb **10%** (teszt).")
+st.write("A lista a **legjobb 3 foci meccset** mutatja részletes opciókkal. A küszöb **10%** (teszt).")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
@@ -64,31 +64,18 @@ if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
 
 try:
-    holnap_datum = (datetime.utcnow() + timedelta(days=1)).date()
-    
     jeloltek = []
     
-    with st.spinner("1. lépés: Holnapi meccsek listájának letöltése..."):
-        # 1. Csak az 1X2-t kérjük le, hogy meglegyenek a meccsek (ez a rész nem dob 422-t)
+    with st.spinner("1. lépés: Foci meccsek listájának letöltése (dátum szűrés nélkül)..."):
+        # 1. Csak az 1X2-t kérjük le, hogy meglegyenek a meccsek
         url_base = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
         valasz = requests.get(url_base)
         
         if valasz.status_code == 200:
             meccsek = valasz.json()
             
-            # Kiszűrjük a holnapi meccseket
-            holnapi_meccsek = []
+            # Kiszámoljuk a legjobb meccseket az 1X2 alapján
             for m in meccsek:
-                idopont_nyers = m.get('commence_time', '')
-                if not idopont_nyers: continue
-                try:
-                    kezdes_dt = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ")
-                    if kezdes_dt.date() == holnap_datum:
-                        holnapi_meccsek.append(m)
-                except: continue
-            
-            # 2. Kiszámoljuk a legjobb meccseket az 1X2 alapján
-            for m in holnapi_meccsek:
                 legjobb_esely = 0
                 for iroda in m.get('bookmakers', []):
                     for market in iroda.get('markets', []):
@@ -156,6 +143,7 @@ try:
                                         'iroda': iroda['title']
                                     }
                 else:
+                    # Ha a részletes lekérés hibát dob, visszaesünk az alap 1X2-re
                     st.warning(f"A részletes opciók lekérése nem sikerült ennél: {m['home_team']} - {m['away_team']}")
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
@@ -196,9 +184,9 @@ try:
     kivalasztott_meccsek = []
 
     if not vegso_lista:
-        st.warning(f"📭 Holnap nincs olyan foci opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
+        st.warning(f"📭 Nincs olyan foci opció, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ A holnapi legjobb {len(vegso_lista)} foci meccs (részletes opciókkal):")
+        st.success(f"✅ A legjobb {len(vegso_lista)} foci meccs (részletes opciókkal):")
         
         for i, j in enumerate(vegso_lista, 1):
             jelzes = "⭐ Kiemelkedő" if j['szint'] == 1 else "🟡 Jó lehetőség"
