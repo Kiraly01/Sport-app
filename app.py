@@ -51,7 +51,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a legbiztonságosabb holnapi foci tippeket mutatja. A küszöb **30%** (teszt üzemmód).")
+st.write("A lista a **holnapi** foci tippeket mutatja részletes opciókkal. A küszöb **30%** (teszt üzemmód).")
 
 # --- BEALLITASOK ---
 API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
@@ -60,95 +60,92 @@ KUSZOB_KIEMELKEDO = 0.75
 MAX_LISTA = 10 
 MAX_KOMBI = 3  
 
-SPORTS_TO_FETCH = ["soccer"]
+# Kiszámoljuk a holnapi dátumot a szűréshez
+holnap_datum = (datetime.utcnow() + timedelta(days=1)).date()
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
 
 try:
-    holnap_datum = (datetime.utcnow() + timedelta(days=1))
-    holnap_str = holnap_datum.strftime("%Y-%m-%d")
-    
     jeloltek = []
     
-    with st.spinner("Foci adatok letöltése..."):
-        for sport in SPORTS_TO_FETCH:
-            # VISSZAÁLLÍTVA A MŰKÖDŐ DÁTUMOS LOGIKA
-            url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts&oddsFormat=decimal&commenceTimeFrom={holnap_str}T00:00:00Z&commenceTimeTo={holnap_str}T23:59:59Z"
+    with st.spinner("Foci adatok letöltése (összes elérhető meccs)..."):
+        # Dátum nélküli kérés, hogy a BTTS és a Gólszámok is lejöjjenek
+        url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts&oddsFormat=decimal"
+        
+        valasz = requests.get(url)
+        
+        if valasz.status_code == 200:
+            meccsek = valasz.json()
             
-            valasz = requests.get(url)
-            
-            if valasz.status_code == 200:
-                meccsek = valasz.json()
+            for m in meccsek:
+                idopont_nyers = m.get('commence_time', '')
+                if not idopont_nyers:
+                    continue
+                    
+                try:
+                    kezdes_dt = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ")
+                    kezdes_formazott = kezdes_dt.strftime("%Y-%m-%d %H:%M")
+                    
+                    # SZŰRÉS: Csak a holnapi meccseket tartjuk meg!
+                    if kezdes_dt.date() != holnap_datum:
+                        continue
+                        
+                except Exception:
+                    continue
                 
-                for m in meccsek:
-                    idopont_nyers = m.get('commence_time', '')
-                    if idopont_nyers:
-                        try:
-                            kezdes_dt = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ")
-                            befejezes_dt = kezdes_dt + timedelta(hours=2)
-                            kezdes_formazott = kezdes_dt.strftime("%Y-%m-%d %H:%M")
-                            befejezes_formazott = befejezes_dt.strftime("%H:%M")
-                        except Exception:
-                            kezdes_formazott = idopont_nyers
-                            befejezes_formazott = "?"
-                    else:
-                        kezdes_formazott = "Nincs idopont"
-                        befejezes_formazott = "?"
-                    
-                    opciok_dict = {}
-                    legjobb_opcio_esely = 0
-                    legjobb_opcio_neve = ""
-                    
-                    for iroda in m.get('bookmakers', []):
-                        for market in iroda.get('markets', []):
-                            if market['key'] not in ['h2h', 'totals', 'btts']: 
-                                continue
-                                
-                            kimenetek = market['outcomes']
-                            nyers_oddsok = [k['price'] for k in kimenetek]
-                            nyers_osszeg = sum([1/o for o in nyers_oddsok])
+                opciok_dict = {}
+                legjobb_opcio_esely = 0
+                legjobb_opcio_neve = ""
+                
+                for iroda in m.get('bookmakers', []):
+                    for market in iroda.get('markets', []):
+                        if market['key'] not in ['h2h', 'totals', 'btts']: 
+                            continue
                             
-                            for k in kimenetek:
-                                valoszinuseg = (1 / k['price']) / nyers_osszeg
-                                
-                                kimenetel_nev = ""
-                                if market['key'] == 'totals':
-                                    kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
-                                elif market['key'] == 'btts':
-                                    kimenetel_nev = f"🥅 [BTTS] Mindkét csapat szerez gólt: {k['name']}"
-                                elif market['key'] == 'h2h':
-                                    kimenetel_nev = f"🏆 [1X2] {k['name']}"
-                                
-                                if valoszinuseg > legjobb_opcio_esely:
-                                    legjobb_opcio_esely = valoszinuseg
-                                    legjobb_opcio_neve = kimenetel_nev
-                                
-                                if kimenetel_nev not in opciok_dict:
-                                    opciok_dict[kimenetel_nev] = {
-                                        'opcio_nev': kimenetel_nev,
-                                        'szazalek': valoszinuseg,
-                                        'odds': k['price'],
-                                        'iroda': iroda['title']
-                                    }
+                        kimenetek = market['outcomes']
+                        nyers_oddsok = [k['price'] for k in kimenetek]
+                        nyers_osszeg = sum([1/o for o in nyers_oddsok])
+                        
+                        for k in kimenetek:
+                            valoszinuseg = (1 / k['price']) / nyers_osszeg
+                            
+                            kimenetel_nev = ""
+                            if market['key'] == 'totals':
+                                kimenetel_nev = f"⚽ [Gólszám] {k['name']} {k.get('point', '')} gól"
+                            elif market['key'] == 'btts':
+                                kimenetel_nev = f"🥅 [BTTS] Mindkét csapat szerez gólt: {k['name']}"
+                            elif market['key'] == 'h2h':
+                                kimenetel_nev = f"🏆 [1X2] {k['name']}"
+                            
+                            if valoszinuseg > legjobb_opcio_esely:
+                                legjobb_opcio_esely = valoszinuseg
+                                legjobb_opcio_neve = kimenetel_nev
+                            
+                            if kimenetel_nev not in opciok_dict:
+                                opciok_dict[kimenetel_nev] = {
+                                    'opcio_nev': kimenetel_nev,
+                                    'szazalek': valoszinuseg,
+                                    'odds': k['price'],
+                                    'iroda': iroda['title']
+                                }
+                
+                if legjobb_opcio_esely >= KUSZOB_MIN:
+                    opciok_listaja = list(opciok_dict.values())
+                    opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
                     
-                    if legjobb_opcio_esely >= KUSZOB_MIN:
-                        opciok_listaja = list(opciok_dict.values())
-                        opciok_listaja.sort(key=lambda x: x['szazalek'], reverse=True)
-                        
-                        szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
-                        
-                        jeloltek.append({
-                            'meccs': f"{m['home_team']} - {m['away_team']}",
-                            'kezdes': kezdes_formazott,
-                            'befejezes': befejezes_formazott,
-                            'legjobb_esely': legjobb_opcio_esely,
-                            'legjobb_opcio_neve': legjobb_opcio_neve,
-                            'opciok': opciok_listaja,
-                            'szint': szint
-                        })
-            else:
-                st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
+                    szint = 1 if legjobb_opcio_esely >= KUSZOB_KIEMELKEDO else 2
+                    
+                    jeloltek.append({
+                        'meccs': f"{m['home_team']} - {m['away_team']}",
+                        'kezdes': kezdes_formazott,
+                        'legjobb_esely': legjobb_opcio_esely,
+                        'legjobb_opcio_neve': legjobb_opcio_neve,
+                        'opciok': opciok_listaja,
+                        'szint': szint
+                    })
+        else:
+            st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
 
     jeloltek.sort(key=lambda x: (x['szint'], -x['legjobb_esely']))
     jeloltek = jeloltek[:MAX_LISTA]
