@@ -55,10 +55,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **mai és holnapi** legjobb esélyű foci meccseket mutatja (max 10).")
+st.write("A lista a **45% feletti** legjobb esélyű foci meccseket mutatja (max 10).")
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
+KUSZOB_MIN = 0.45  # 45%-os minimum küszöb
 MAX_LISTA = 10  
 
 if "kivalasztott_tippek" not in st.session_state:
@@ -76,7 +77,7 @@ try:
     ma_str = most_utc.strftime("%Y-%m-%d")
     holnap_str = (most_utc + timedelta(days=1)).strftime("%Y-%m-%d")
     
-    jeloltek = []
+    jeloltek_dict = {}  # Szótár a duplikációk kiszűréséhez
     
     with st.spinner("Foci meccsek letöltése (The Odds API)..."):
         for datum in [ma_str, holnap_str]:
@@ -113,24 +114,28 @@ try:
                                     elif k['name'] == m['away_team']: h2h_odds['vendeg'] = k['price']
                                     elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
                     
-                    if legjobb_esely > 0:
-                        jeloltek.append({
-                            'meccs': f"{m['home_team']} - {m['away_team']}",
-                            'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
-                            'legjobb_esely': legjobb_esely,
-                            'oddsok': h2h_odds,
-                            'hazai': m['home_team'],
-                            'vendeg': m['away_team']
-                        })
+                    if legjobb_esely >= KUSZOB_MIN:
+                        # A duplikációk kiszűrése a meccs neve alapján
+                        meccs_nev = f"{m['home_team']} - {m['away_team']}"
+                        if meccs_nev not in jeloltek_dict or legjobb_esely > jeloltek_dict[meccs_nev]['legjobb_esely']:
+                            jeloltek_dict[meccs_nev] = {
+                                'meccs': meccs_nev,
+                                'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
+                                'legjobb_esely': legjobb_esely,
+                                'oddsok': h2h_odds,
+                                'hazai': m['home_team'],
+                                'vendeg': m['away_team']
+                            }
     
-    # Rendezés a legjobb esély szerint, és a top 10
+    # Szótárból lista, majd rendezés a legjobb esély szerint (csökkenő)
+    jeloltek = list(jeloltek_dict.values())
     jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
     top_lista = jeloltek[:MAX_LISTA]
 
     if not top_lista:
-        st.warning("📭 Nincs olyan foci meccs a mai és holnapi napon, ami megfelelne a feltételeknek.")
+        st.warning(f"📭 Nincs olyan foci meccs a mai és holnapi napon, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ A legjobb {len(top_lista)} foci meccs (mai és holnapi):")
+        st.success(f"✅ A legjobb {len(top_lista)} foci meccs (45% felett):")
         
         for i, j in enumerate(top_lista, 1):
             cim = f"🟡 | {j['meccs']}  —  {j['legjobb_esely']*100:.1f}%"
