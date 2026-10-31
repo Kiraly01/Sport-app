@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import pytz
+from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
@@ -48,23 +49,17 @@ st.markdown("""
 st.markdown("<h1>⚽ Napi Foci Szűrő</h1>", unsafe_allow_html=True)
 
 # ==========================================
-# ÉLŐ ÓRA (JavaScript)
+# ÉLŐ ÓRA (Autorefresh)
 # ==========================================
-st.markdown("""
+# Ez a sor másodpercenként újrafuttatja az appot (1000 ms = 1 mp)
+st_autorefresh(interval=1000, key="clock_refresh")
+
+hu_tz = pytz.timezone('Europe/Budapest')
+aktualis_ido = datetime.now(hu_tz)
+st.markdown(f"""
     <div class="clock-container">
-        <div class="live-clock" id="clock">Betöltés...</div>
+        <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
     </div>
-    <script>
-        function updateClock() {
-            const now = new Date();
-            const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-            const date = now.toLocaleDateString('hu-HU', options);
-            const time = now.toLocaleTimeString('hu-HU');
-            document.getElementById('clock').innerHTML = "📅 " + date + " | ⏰ " + time;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
 """, unsafe_allow_html=True)
 
 st.write("A lista a **45% feletti** legjobb esélyű, **még el nem kezdődött** foci meccseket mutatja (max 10).")
@@ -82,7 +77,6 @@ if st.button("🔄 Adatok frissítése"):
     st.session_state.kivalasztott_tippek = []
 
 try:
-    most_hu = datetime.now(pytz.utc).astimezone(pytz.timezone('Europe/Budapest'))
     most_utc = datetime.now(pytz.utc)
     
     # Dátumok: mai és holnapi
@@ -106,11 +100,11 @@ try:
                     try:
                         kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
                         
-                        # ÉLŐ MECCSEK KISZŰRÉSE: csak a jövőbeli meccsek
+                        # ÉLŐ MECCSEK KISZŰRÉSE
                         if kezdes_utc <= most_utc:
                             continue
                             
-                        kezdes_hu = kezdes_utc.astimezone(pytz.timezone('Europe/Budapest'))
+                        kezdes_hu = kezdes_utc.astimezone(hu_tz)
                     except: continue
                     
                     legjobb_esely = 0
