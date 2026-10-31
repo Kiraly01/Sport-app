@@ -35,6 +35,7 @@ st.markdown("""
         font-family: 'Courier New', monospace; font-size: 1.2em; color: #FACC15;
         background-color: #1E252B; padding: 10px 20px; border-radius: 4px;
         border: 1px solid #333; font-weight: bold;
+        letter-spacing: 1px;
     }
     
     div[data-testid="column"] {
@@ -46,16 +47,27 @@ st.markdown("""
 
 st.markdown("<h1>⚽ Napi Foci Szűrő</h1>", unsafe_allow_html=True)
 
-# ÓRA
-hu_tz = pytz.timezone('Europe/Budapest')
-aktualis_ido = datetime.now(hu_tz)
-st.markdown(f"""
+# ==========================================
+# ÉLŐ ÓRA (JavaScript)
+# ==========================================
+st.markdown("""
     <div class="clock-container">
-        <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
+        <div class="live-clock" id="clock">Betöltés...</div>
     </div>
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            const date = now.toLocaleDateString('hu-HU', options);
+            const time = now.toLocaleTimeString('hu-HU');
+            document.getElementById('clock').innerHTML = "📅 " + date + " | ⏰ " + time;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **45% feletti** legjobb esélyű foci meccseket mutatja (max 10).")
+st.write("A lista a **45% feletti** legjobb esélyű, **még el nem kezdődött** foci meccseket mutatja (max 10).")
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
@@ -70,14 +82,14 @@ if st.button("🔄 Adatok frissítése"):
     st.session_state.kivalasztott_tippek = []
 
 try:
-    most_hu = datetime.now(hu_tz)
+    most_hu = datetime.now(pytz.utc).astimezone(pytz.timezone('Europe/Budapest'))
     most_utc = datetime.now(pytz.utc)
     
     # Dátumok: mai és holnapi
     ma_str = most_utc.strftime("%Y-%m-%d")
     holnap_str = (most_utc + timedelta(days=1)).strftime("%Y-%m-%d")
     
-    jeloltek_dict = {}  # Szótár a duplikációk kiszűréséhez
+    jeloltek_dict = {}
     
     with st.spinner("Foci meccsek letöltése (The Odds API)..."):
         for datum in [ma_str, holnap_str]:
@@ -93,11 +105,14 @@ try:
                     
                     try:
                         kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
-                        if kezdes_utc <= most_utc: continue
-                        kezdes_hu = kezdes_utc.astimezone(hu_tz)
+                        
+                        # ÉLŐ MECCSEK KISZŰRÉSE: csak a jövőbeli meccsek
+                        if kezdes_utc <= most_utc:
+                            continue
+                            
+                        kezdes_hu = kezdes_utc.astimezone(pytz.timezone('Europe/Budapest'))
                     except: continue
                     
-                    # Kiszámoljuk a legjobb esélyt (1X2)
                     legjobb_esely = 0
                     h2h_odds = {}
                     for iroda in m.get('bookmakers', []):
@@ -115,7 +130,6 @@ try:
                                     elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
                     
                     if legjobb_esely >= KUSZOB_MIN:
-                        # A duplikációk kiszűrése a meccs neve alapján
                         meccs_nev = f"{m['home_team']} - {m['away_team']}"
                         if meccs_nev not in jeloltek_dict or legjobb_esely > jeloltek_dict[meccs_nev]['legjobb_esely']:
                             jeloltek_dict[meccs_nev] = {
@@ -127,15 +141,14 @@ try:
                                 'vendeg': m['away_team']
                             }
     
-    # Szótárból lista, majd rendezés a legjobb esély szerint (csökkenő)
     jeloltek = list(jeloltek_dict.values())
     jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
     top_lista = jeloltek[:MAX_LISTA]
 
     if not top_lista:
-        st.warning(f"📭 Nincs olyan foci meccs a mai és holnapi napon, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
+        st.warning(f"📭 Nincs olyan jövőbeli foci meccs, aminek az esélye elérné a {int(KUSZOB_MIN*100)}%-ot.")
     else:
-        st.success(f"✅ A legjobb {len(top_lista)} foci meccs (45% felett):")
+        st.success(f"✅ A legjobb {len(top_lista)} jövőbeli foci meccs (45% felett):")
         
         for i, j in enumerate(top_lista, 1):
             cim = f"🟡 | {j['meccs']}  —  {j['legjobb_esely']*100:.1f}%"
