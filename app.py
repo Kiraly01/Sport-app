@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import pytz
-from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
@@ -49,18 +48,19 @@ st.markdown("""
 st.markdown("<h1>⚽ Napi Foci Szűrő</h1>", unsafe_allow_html=True)
 
 # ==========================================
-# ÉLŐ ÓRA (Autorefresh)
+# ÉLŐ ÓRA (st.fragment - csak az óra frissül!)
 # ==========================================
-# Ez a sor másodpercenként újrafuttatja az appot (1000 ms = 1 mp)
-st_autorefresh(interval=1000, key="clock_refresh")
+@st.fragment(run_every=1)
+def ora_frissites():
+    hu_tz = pytz.timezone('Europe/Budapest')
+    aktualis_ido = datetime.now(hu_tz)
+    st.markdown(f"""
+        <div class="clock-container">
+            <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-hu_tz = pytz.timezone('Europe/Budapest')
-aktualis_ido = datetime.now(hu_tz)
-st.markdown(f"""
-    <div class="clock-container">
-        <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
-    </div>
-""", unsafe_allow_html=True)
+ora_frissites()
 
 st.write("A lista a **45% feletti** legjobb esélyű, **még el nem kezdődött** foci meccseket mutatja (max 10).")
 
@@ -78,6 +78,7 @@ if st.button("🔄 Adatok frissítése"):
 
 try:
     most_utc = datetime.now(pytz.utc)
+    hu_tz = pytz.timezone('Europe/Budapest')
     
     # Dátumok: mai és holnapi
     ma_str = most_utc.strftime("%Y-%m-%d")
