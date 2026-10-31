@@ -4,44 +4,103 @@ from datetime import datetime, timedelta
 import pytz
 
 # ==========================================
-# TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
+# MODERN, NAGY BETŰS KINÉZET (CSS)
 # ==========================================
 st.set_page_config(page_title="Napi Foci Szűrő", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #12161A; color: #E0E0E0; }
-    h1, h2, h3 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 600; text-align: center; }
     
+    /* Címek - nagyobb, vastagabb */
+    h1 { 
+        color: #FFFFFF; 
+        font-family: 'Segoe UI', sans-serif; 
+        font-weight: 800; 
+        font-size: 2.8em; 
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    /* Kártyák fejléce - nagyobb betű */
     .streamlit-expanderHeader {
-        background-color: #1E252B !important; border-radius: 4px !important;
-        color: #FACC15 !important; font-weight: 600 !important; font-size: 1.1em !important;
-        border: 1px solid #333 !important; padding: 12px 15px !important; margin-bottom: 5px;
+        background-color: #1E252B !important; 
+        border-radius: 8px !important;
+        color: #FACC15 !important; 
+        font-weight: 700 !important; 
+        font-size: 1.3em !important; 
+        border: 1px solid #444 !important; 
+        padding: 15px 20px !important; 
+        margin-bottom: 8px;
     }
+    
+    /* Kártyák tartalma */
     .streamlit-expanderContent {
-        background-color: #161A1F !important; border: 1px solid #333 !important;
-        border-top: none !important; border-bottom-left-radius: 4px !important; border-bottom-right-radius: 4px !important;
-        padding: 15px !important;
+        background-color: #161A1F !important; 
+        border: 1px solid #444 !important;
+        border-top: none !important; 
+        border-bottom-left-radius: 8px !important; 
+        border-bottom-right-radius: 8px !important;
+        padding: 20px !important;
     }
     
+    /* Gombok - nagyobb betű */
     .stButton>button {
-        background-color: #FACC15; color: #000000; font-weight: bold; border-radius: 4px;
-        border: none; padding: 10px 24px; width: 100%;
+        background-color: #FACC15; 
+        color: #000000; 
+        font-weight: 800; 
+        font-size: 1.4em;
+        border-radius: 8px;
+        border: none; 
+        padding: 15px 20px; 
+        width: 100%;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        transition: all 0.2s;
     }
-    .stButton>button:hover { background-color: #EAB308; color: #000000; }
+    .stButton>button:hover { 
+        background-color: #EAB308; 
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+    }
     
-    .clock-container { display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 20px; }
+    /* Óra - sokkal nagyobb, dizájnosabb */
+    .clock-container { 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        margin-top: 20px; 
+        margin-bottom: 30px; 
+    }
     .live-clock {
-        font-family: 'Courier New', monospace; font-size: 1.2em; color: #FACC15;
-        background-color: #1E252B; padding: 10px 20px; border-radius: 4px;
-        border: 1px solid #333; font-weight: bold;
-        letter-spacing: 1px;
+        font-family: 'Courier New', monospace; 
+        font-size: 2.2em; 
+        color: #FACC15;
+        background-color: #1E252B; 
+        padding: 20px 40px; 
+        border-radius: 12px;
+        border: 2px solid #444; 
+        font-weight: 900;
+        letter-spacing: 3px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
     }
     
+    /* Kártyák oszlopai */
     div[data-testid="column"] {
-        background-color: #242B33; border-radius: 6px; padding: 5px; border: 1px solid #333;
+        background-color: #242B33; 
+        border-radius: 8px; 
+        padding: 10px; 
+        border: 1px solid #444;
+        transition: all 0.2s;
     }
-    div[data-testid="column"]:hover { border-color: #FACC15; }
+    div[data-testid="column"]:hover { 
+        border-color: #FACC15; 
+        transform: scale(1.02);
+    }
+    
+    /* Kártyákon belüli szövegek mérete */
+    .stMarkdown p {
+        font-size: 1.1em;
+    }
     </style>
 """, unsafe_allow_html=True)
 
