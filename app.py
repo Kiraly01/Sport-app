@@ -22,7 +22,7 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Kártyák fejléce - meccsek nevei (nagyobb, kiemeltebb) */
+    /* Kártyák fejléce - meccsek nevei */
     .streamlit-expanderHeader {
         background-color: #1E252B !important; 
         border-radius: 8px !important;
@@ -45,7 +45,7 @@ st.markdown("""
         padding: 20px !important;
     }
     
-    /* Gombok - kicsit kisebb, letisztultabb */
+    /* Gombok */
     .stButton>button {
         background-color: #FACC15; 
         color: #000000; 
@@ -64,25 +64,25 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     
-    /* Óra */
+    /* Óra - KISEBB CSEMPE */
     .clock-container { 
         display: flex; 
         justify-content: center; 
         align-items: center; 
-        margin-top: 20px; 
-        margin-bottom: 30px; 
+        margin-top: 10px; 
+        margin-bottom: 15px; 
     }
     .live-clock {
         font-family: 'Courier New', monospace; 
-        font-size: 2.2em; 
+        font-size: 1.6em; 
         color: #FACC15;
         background-color: #1E252B; 
-        padding: 20px 40px; 
-        border-radius: 12px;
-        border: 2px solid #444; 
-        font-weight: 900;
-        letter-spacing: 3px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        padding: 10px 20px; 
+        border-radius: 8px;
+        border: 1px solid #444; 
+        font-weight: 800;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
     
     /* Kártyák oszlopai */
@@ -98,17 +98,14 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* Kártyákon belüli szövegek mérete */
-    .stMarkdown p {
-        font-size: 1.1em;
-    }
+    .stMarkdown p { font-size: 1.1em; }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1>⚽ Napi Foci Szűrő</h1>", unsafe_allow_html=True)
 
 # ==========================================
-# ÉLŐ ÓRA (st.fragment - csak az óra frissül!)
+# ÉLŐ ÓRA
 # ==========================================
 @st.fragment(run_every=1)
 def ora_frissites():
@@ -126,7 +123,7 @@ st.write("A lista a **45% feletti** legjobb esélyű, **még el nem kezdődött*
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.45  # 45%-os minimum küszöb
+KUSZOB_MIN = 0.45
 MAX_LISTA = 10  
 
 if "kivalasztott_tippek" not in st.session_state:
@@ -140,7 +137,6 @@ try:
     most_utc = datetime.now(pytz.utc)
     hu_tz = pytz.timezone('Europe/Budapest')
     
-    # Dátumok: mai és holnapi
     ma_str = most_utc.strftime("%Y-%m-%d")
     holnap_str = (most_utc + timedelta(days=1)).strftime("%Y-%m-%d")
     
@@ -161,7 +157,6 @@ try:
                     try:
                         kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
                         
-                        # ÉLŐ MECCSEK KISZŰRÉSE
                         if kezdes_utc <= most_utc:
                             continue
                             
@@ -228,7 +223,6 @@ try:
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
-    # --- KOMBINÁCIÓS SZELVÉNY ---
     if len(st.session_state.kivalasztott_tippek) > 0:
         st.markdown("---")
         st.header("🧾 Kombinációs Szelvény")
