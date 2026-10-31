@@ -6,7 +6,7 @@ import pytz
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v17", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Foci Szűrő", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -37,14 +37,6 @@ st.markdown("""
         border: 1px solid #333; font-weight: bold;
     }
     
-    .stat-box {
-        background-color: #1E252B; border-left: 3px solid #FACC15;
-        padding: 10px; margin-bottom: 15px; border-radius: 4px;
-        font-size: 0.9em;
-    }
-    .stat-label { color: #A0AAB5; }
-    .stat-value { color: #FACC15; font-weight: bold; }
-    
     div[data-testid="column"] {
         background-color: #242B33; border-radius: 6px; padding: 5px; border: 1px solid #333;
     }
@@ -52,7 +44,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v17)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Szűrő</h1>", unsafe_allow_html=True)
 
 # ÓRA
 hu_tz = pytz.timezone('Europe/Budapest')
@@ -63,15 +55,11 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **következő 3 nap top-5 liga legbiztosabb meccseit** mutatja, tabella és forma statisztikákkal!")
+st.write("A lista a **mai és holnapi** legjobb esélyű foci meccseket mutatja (max 10).")
 
 # --- BEALLITASOK ---
-FIVE_DOLLAR_API_KEY = "fb_live_693hvNiBbMfswhfmjsh4FSKDUJiJikw6"
-MAX_LISTA = 3  
-MAX_KOMBI = 3  
-
-# Az 5DollarFootballAPI által támogatott ligák (ingyenes csomag)
-TOP_LEAGUE_NAMES = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
+ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
+MAX_LISTA = 10  
 
 if "kivalasztott_tippek" not in st.session_state:
     st.session_state.kivalasztott_tippek = []
@@ -81,174 +69,74 @@ if st.button("🔄 Adatok frissítése"):
     st.session_state.kivalasztott_tippek = []
 
 try:
-    headers = {'Authorization': f'Bearer {FIVE_DOLLAR_API_KEY}'}
+    most_hu = datetime.now(hu_tz)
     most_utc = datetime.now(pytz.utc)
+    
+    # Dátumok: mai és holnapi
+    ma_str = most_utc.strftime("%Y-%m-%d")
+    holnap_str = (most_utc + timedelta(days=1)).strftime("%Y-%m-%d")
     
     jeloltek = []
     
-    with st.spinner("1. lépés: Következő 3 nap top-5 liga meccseinek letöltése..."):
-        # Végigmegyünk a következő 3 napon (ma + 2 nap)
-        for nap_offset in range(3):
-            datum = most_utc + timedelta(days=nap_offset)
-            datum_str = datum.strftime("%Y-%m-%d")
-            url_fixtures = f"https://api.5dollarfootballapi.com/v1/fixtures?start_time={datum_str}"
-            res_fixtures = requests.get(url_fixtures, headers=headers)
+    with st.spinner("Foci meccsek letöltése (The Odds API)..."):
+        for datum in [ma_str, holnap_str]:
+            url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={datum}T00:00:00Z&commenceTimeTo={datum}T23:59:59Z"
+            valasz = requests.get(url)
             
-            if res_fixtures.status_code == 200:
-                fixtures_data = res_fixtures.json()
-                if 'data' in fixtures_data:
-                    for fix in fixtures_data['data']:
-                        league_name = fix.get('league', {}).get('name', '')
-                        if not any(top in league_name for top in TOP_LEAGUE_NAMES):
-                            continue
-                        
-                        kezdes_str = fix.get('kickoff_utc', '')
-                        if not kezdes_str: continue
-                        try:
-                            kezdes_dt = datetime.fromisoformat(kezdes_str.replace('Z', '+00:00'))
-                            if kezdes_dt <= most_utc: continue
-                        except: continue
-                        
-                        jeloltek.append(fix)
-
-    # 2. lépés: A legjobb meccsek kiválasztása és statisztikák lekérése
-    vegso_lista = []
-    if jeloltek:
-        with st.spinner("2. lépés: Statisztikák (tabella, forma) letöltése..."):
-            # Tabellák lekérése - A DOKUMENTÁCIÓ SZERINT: data -> standings
-            tabellak = {}
-            liga_id_k = set(fix['league']['id'] for fix in jeloltek)
-            for lid in liga_id_k:
-                try:
-                    res_table = requests.get(f"https://api.5dollarfootballapi.com/v1/standings?league={lid}", headers=headers)
-                    if res_table.status_code == 200:
-                        table_data = res_table.json()
-                        if 'data' in table_data and 'standings' in table_data['data']:
-                            tabellak[lid] = table_data['data']['standings']
-                except: pass
-            
-            for fix in jeloltek[:MAX_LISTA * 2]:
-                hazai = fix['teams']['home']['name']
-                vendeg = fix['teams']['away']['name']
-                hazai_id = fix['teams']['home']['id']
-                vendeg_id = fix['teams']['away']['id']
-                lid = fix['league']['id']
+            if valasz.status_code == 200:
+                meccsek = valasz.json()
                 
-                # Tabella
-                hazai_tabla = "Nincs adat"
-                vendeg_tabla = "Nincs adat"
-                if lid in tabellak:
-                    for row in tabellak[lid]:
-                        if row['team']['id'] == hazai_id:
-                            hazai_tabla = f"{row['position']}. hely, {row['points']} pont"
-                        elif row['team']['id'] == vendeg_id:
-                            vendeg_tabla = f"{row['position']}. hely, {row['points']} pont"
-                
-                # Forma
-                forma_hazai = "Nincs adat"
-                forma_vendeg = "Nincs adat"
-                try:
-                    res_form_h = requests.get(f"https://api.5dollarfootballapi.com/v1/teams/{hazai_id}/fixtures?status=finished&per_page=5", headers=headers)
-                    if res_form_h.status_code == 200:
-                        form_data = res_form_h.json()
-                        if 'data' in form_data and form_data['data']:
-                            gyozelem = 0
-                            for f in form_data['data'][:5]:
-                                if f['teams']['home']['id'] == hazai_id:
-                                    if f['teams']['home'].get('winner'): gyozelem += 1
-                                else:
-                                    if f['teams']['away'].get('winner'): gyozelem += 1
-                            forma_hazai = f"{gyozelem} győzelem / 5"
-                except: pass
-                
-                try:
-                    res_form_v = requests.get(f"https://api.5dollarfootballapi.com/v1/teams/{vendeg_id}/fixtures?status=finished&per_page=5", headers=headers)
-                    if res_form_v.status_code == 200:
-                        form_data = res_form_v.json()
-                        if 'data' in form_data and form_data['data']:
-                            gyozelem = 0
-                            for f in form_data['data'][:5]:
-                                if f['teams']['home']['id'] == vendeg_id:
-                                    if f['teams']['home'].get('winner'): gyozelem += 1
-                                else:
-                                    if f['teams']['away'].get('winner'): gyozelem += 1
-                            forma_vendeg = f"{gyozelem} győzelem / 5"
-                except: pass
-
-                # Odds
-                h2h_odds = {}
-                extra_opciok = []
-                try:
-                    res_odds = requests.get(f"https://api.5dollarfootballapi.com/v1/fixtures/{fix['id']}/odds", headers=headers)
-                    if res_odds.status_code == 200:
-                        odds_data = res_odds.json()
-                        if 'data' in odds_data and 'bet365' in odds_data['data']:
-                            b365 = odds_data['data']['bet365']
-                            if '1x2' in b365 and b365['1x2'].get('closing'):
-                                h2h_odds['hazai'] = b365['1x2']['closing'].get('home')
-                                h2h_odds['dontetlen'] = b365['1x2']['closing'].get('draw')
-                                h2h_odds['vendeg'] = b365['1x2']['closing'].get('away')
-                            if 'btts' in b365 and b365['btts'].get('closing'):
-                                extra_opciok.append({'nev': 'BTTS - Igen', 'odds': b365['btts']['closing'].get('yes')})
-                                extra_opciok.append({'nev': 'BTTS - Nem', 'odds': b365['btts']['closing'].get('no')})
-                            if 'goal_line' in b365 and b365['goal_line'].get('closing'):
-                                gl = b365['goal_line']['closing']
-                                if isinstance(gl, list) and len(gl) > 0:
-                                    for line in gl:
-                                        if line.get('line') == 2.5:
-                                            extra_opciok.append({'nev': 'Több mint 2.5 gól', 'odds': line.get('over')})
-                                            extra_opciok.append({'nev': 'Kevesebb mint 2.5 gól', 'odds': line.get('under')})
-                except: pass
-                
-                if h2h_odds.get('hazai'):
-                    biztonsagi_pont = 0
-                    if "1. hely" in hazai_tabla or "2. hely" in hazai_tabla: biztonsagi_pont += 2
-                    if "1. hely" in vendeg_tabla or "2. hely" in vendeg_tabla: biztonsagi_pont += 2
-                    if "4 győzelem" in forma_hazai or "5 győzelem" in forma_hazai: biztonsagi_pont += 1
-                    if "4 győzelem" in forma_vendeg or "5 győzelem" in forma_vendeg: biztonsagi_pont += 1
+                for m in meccsek:
+                    idopont_nyers = m.get('commence_time', '')
+                    if not idopont_nyers: continue
                     
                     try:
-                        kezdes_formazott = datetime.fromisoformat(fix.get('kickoff_utc', '').replace('Z', '+00:00')).astimezone(hu_tz).strftime("%Y-%m-%d %H:%M")
-                    except:
-                        kezdes_formazott = "Nincs adat"
+                        kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
+                        if kezdes_utc <= most_utc: continue
+                        kezdes_hu = kezdes_utc.astimezone(hu_tz)
+                    except: continue
                     
-                    vegso_lista.append({
-                        'meccs': f"{hazai} - {vendeg}",
-                        'kezdes': kezdes_formazott,
-                        'oddsok': h2h_odds,
-                        'extra_opciok': extra_opciok,
-                        'hazai_tabla': hazai_tabla,
-                        'vendeg_tabla': vendeg_tabla,
-                        'forma_h': forma_hazai,
-                        'forma_v': forma_vendeg,
-                        'biztonsagi_pont': biztonsagi_pont,
-                        'hazai': hazai,
-                        'vendeg': vendeg
-                    })
-            
-            vegso_lista.sort(key=lambda x: x['biztonsagi_pont'], reverse=True)
-            vegso_lista = vegso_lista[:MAX_LISTA]
+                    # Kiszámoljuk a legjobb esélyt (1X2)
+                    legjobb_esely = 0
+                    h2h_odds = {}
+                    for iroda in m.get('bookmakers', []):
+                        for market in iroda.get('markets', []):
+                            if market['key'] == 'h2h':
+                                kimenetek = market['outcomes']
+                                nyers_oddsok = [k['price'] for k in kimenetek]
+                                nyers_osszeg = sum([1/o for o in nyers_oddsok])
+                                for k in kimenetek:
+                                    esely = (1 / k['price']) / nyers_osszeg
+                                    if esely > legjobb_esely:
+                                        legjobb_esely = esely
+                                    if k['name'] == m['home_team']: h2h_odds['hazai'] = k['price']
+                                    elif k['name'] == m['away_team']: h2h_odds['vendeg'] = k['price']
+                                    elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
+                    
+                    if legjobb_esely > 0:
+                        jeloltek.append({
+                            'meccs': f"{m['home_team']} - {m['away_team']}",
+                            'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
+                            'legjobb_esely': legjobb_esely,
+                            'oddsok': h2h_odds,
+                            'hazai': m['home_team'],
+                            'vendeg': m['away_team']
+                        })
+    
+    # Rendezés a legjobb esély szerint, és a top 10
+    jeloltek.sort(key=lambda x: x['legjobb_esely'], reverse=True)
+    top_lista = jeloltek[:MAX_LISTA]
 
-    if not vegso_lista:
-        st.warning("📭 Nincs olyan top-5 ligás meccs (a következő 3 napban), ami megfelelne a feltételeknek.")
+    if not top_lista:
+        st.warning("📭 Nincs olyan foci meccs a mai és holnapi napon, ami megfelelne a feltételeknek.")
     else:
-        st.success(f"✅ A legbiztosabb {len(vegso_lista)} top-5 ligás meccs (következő 3 nap):")
+        st.success(f"✅ A legjobb {len(top_lista)} foci meccs (mai és holnapi):")
         
-        for i, j in enumerate(vegso_lista, 1):
-            cim = f"🟡 | {j['meccs']}  —  Biztonsági pont: {j['biztonsagi_pont']}"
+        for i, j in enumerate(top_lista, 1):
+            cim = f"🟡 | {j['meccs']}  —  {j['legjobb_esely']*100:.1f}%"
             
             with st.expander(cim, expanded=True):
                 st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                    <div class="stat-box">
-                        <div><span class="stat-label">🏆 Tabella:</span> <span class="stat-value">H: {j['hazai_tabla']} | V: {j['vendeg_tabla']}</span></div>
-                        <div style="margin-top: 5px;"><span class="stat-label">📊 Forma:</span> <span class="stat-value">H: {j['forma_h']} | V: {j['forma_v']}</span></div>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("---")
-                st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>Fő kimenetelek:</div>", unsafe_allow_html=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -265,18 +153,6 @@ try:
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': f"{j['vendeg']} (Vendég)", 'odds': j['oddsok'].get('vendeg', 1.0)})
 
                 st.markdown("---")
-                
-                if j['extra_opciok']:
-                    st.markdown("<div style='text-align:center; margin-bottom: 10px; color:#A0AAB5;'>További opciók:</div>", unsafe_allow_html=True)
-                    for idx, opcio in enumerate(j['extra_opciok']):
-                        if opcio['odds']:
-                            col_e1, col_e2 = st.columns([8, 2])
-                            with col_e1:
-                                if st.button(f"{opcio['nev']}", key=f"extra_{i}_{idx}"):
-                                    st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': opcio['nev'], 'odds': opcio['odds']})
-                            with col_e2:
-                                st.markdown(f"<div style='text-align:right; font-size:1.2em; font-weight:bold; color:#FACC15; padding-top:5px;'>{opcio['odds']}</div>", unsafe_allow_html=True)
-
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
 
     # --- KOMBINÁCIÓS SZELVÉNY ---
@@ -284,8 +160,8 @@ try:
         st.markdown("---")
         st.header("🧾 Kombinációs Szelvény")
         
-        if len(st.session_state.kivalasztott_tippek) > MAX_KOMBI:
-            st.error(f"⚠️ **FIGYELEM!** Túl sok opciót választottál ki. Maximum {MAX_KOMBI} opció javasolt!")
+        if len(st.session_state.kivalasztott_tippek) > 3:
+            st.error("⚠️ **FIGYELEM!** Túl sok opciót választottál ki. Maximum 3 opció javasolt!")
         else:
             ossz_odds = 1.0
             for t in st.session_state.kivalasztott_tippek:
