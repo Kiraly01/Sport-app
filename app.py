@@ -12,7 +12,7 @@ st.markdown("""
     <style>
     .stApp { background-color: #12161A; color: #E0E0E0; }
     
-    /* Címek - nagyobb, vastagabb */
+    /* Címek */
     h1 { 
         color: #FFFFFF; 
         font-family: 'Segoe UI', sans-serif; 
@@ -22,16 +22,17 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Kártyák fejléce - nagyobb betű */
+    /* Kártyák fejléce - meccsek nevei (nagyobb, kiemeltebb) */
     .streamlit-expanderHeader {
         background-color: #1E252B !important; 
         border-radius: 8px !important;
         color: #FACC15 !important; 
-        font-weight: 700 !important; 
-        font-size: 1.3em !important; 
+        font-weight: 800 !important; 
+        font-size: 1.6em !important; 
         border: 1px solid #444 !important; 
-        padding: 15px 20px !important; 
+        padding: 18px 20px !important; 
         margin-bottom: 8px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
     
     /* Kártyák tartalma */
@@ -44,26 +45,26 @@ st.markdown("""
         padding: 20px !important;
     }
     
-    /* Gombok - nagyobb betű */
+    /* Gombok - kicsit kisebb, letisztultabb */
     .stButton>button {
         background-color: #FACC15; 
         color: #000000; 
-        font-weight: 800; 
-        font-size: 1.4em;
-        border-radius: 8px;
+        font-weight: 700; 
+        font-size: 1.1em;
+        border-radius: 6px;
         border: none; 
-        padding: 15px 20px; 
+        padding: 10px 15px; 
         width: 100%;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         transition: all 0.2s;
     }
     .stButton>button:hover { 
         background-color: #EAB308; 
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     
-    /* Óra - sokkal nagyobb, dizájnosabb */
+    /* Óra */
     .clock-container { 
         display: flex; 
         justify-content: center; 
@@ -208,19 +209,19 @@ try:
             cim = f"🟡 | {j['meccs']}  —  {j['legjobb_esely']*100:.1f}%"
             
             with st.expander(cim, expanded=True):
-                st.markdown(f"<div style='font-size: 0.9em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Hazai</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:center; font-size:0.9em; color:#A0AAB5;'>Hazai</div>", unsafe_allow_html=True)
                     if st.button(f"{j['oddsok'].get('hazai', '-')}", key=f"h_{i}"):
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': f"{j['hazai']} (Hazai)", 'odds': j['oddsok'].get('hazai', 1.0)})
                 with col2:
-                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Döntetlen</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:center; font-size:0.9em; color:#A0AAB5;'>Döntetlen</div>", unsafe_allow_html=True)
                     if st.button(f"{j['oddsok'].get('dontetlen', '-')}", key=f"d_{i}"):
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': "Döntetlen", 'odds': j['oddsok'].get('dontetlen', 1.0)})
                 with col3:
-                    st.markdown(f"<div style='text-align:center; font-size:0.8em; color:#A0AAB5;'>Vendég</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:center; font-size:0.9em; color:#A0AAB5;'>Vendég</div>", unsafe_allow_html=True)
                     if st.button(f"{j['oddsok'].get('vendeg', '-')}", key=f"v_{i}"):
                         st.session_state.kivalasztott_tippek.append({'meccs': j['meccs'], 'opcio': f"{j['vendeg']} (Vendég)", 'odds': j['oddsok'].get('vendeg', 1.0)})
 
