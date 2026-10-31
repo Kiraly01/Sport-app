@@ -6,7 +6,7 @@ import pytz
 # ==========================================
 # TIPPMIX PRO-S SÖTÉT KINÉZET (CSS)
 # ==========================================
-st.set_page_config(page_title="Napi Sport Elemzo v16", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Napi Sport Elemzo v17", page_icon="⚽", layout="centered")
 
 st.markdown("""
     <style>
@@ -52,7 +52,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Elemzo (v16)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Elemzo (v17)</h1>", unsafe_allow_html=True)
 
 # ÓRA
 hu_tz = pytz.timezone('Europe/Budapest')
@@ -63,7 +63,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-st.write("A lista a **mai és holnapi top-5 liga legbiztosabb meccseit** mutatja, tabella, forma és H2H statisztikákkal!")
+st.write("A lista a **következő 3 nap top-5 liga legbiztosabb meccseit** mutatja, tabella és forma statisztikákkal!")
 
 # --- BEALLITASOK ---
 FIVE_DOLLAR_API_KEY = "fb_live_693hvNiBbMfswhfmjsh4FSKDUJiJikw6"
@@ -86,54 +86,36 @@ try:
     
     jeloltek = []
     
-    with st.spinner("1. lépés: Mai és holnapi top-5 liga meccsek letöltése..."):
-        # Mai meccsek (UTC szerint küldjük a dátumot, ahogy az API várja)
-        datum_str = most_utc.strftime("%Y-%m-%d")
-        url_fixtures = f"https://api.5dollarfootballapi.com/v1/fixtures?start_time={datum_str}"
-        res_fixtures = requests.get(url_fixtures, headers=headers)
-        
-        if res_fixtures.status_code == 200:
-            fixtures_data = res_fixtures.json()
-            if 'data' in fixtures_data:
-                for fix in fixtures_data['data']:
-                    league_name = fix.get('league', {}).get('name', '')
-                    if not any(top in league_name for top in TOP_LEAGUE_NAMES):
-                        continue
-                    
-                    # A dokumentáció szerint a mező neve kickoff_utc!
-                    kezdes_str = fix.get('kickoff_utc', '')
-                    if not kezdes_str: continue
-                    try:
-                        kezdes_dt = datetime.fromisoformat(kezdes_str.replace('Z', '+00:00'))
-                        if kezdes_dt <= most_utc: continue
-                    except: continue
-                    
-                    jeloltek.append(fix)
-        
-        # Holnapi meccsek
-        holnap_str = (most_utc + timedelta(days=1)).strftime("%Y-%m-%d")
-        url_fixtures_holnap = f"https://api.5dollarfootballapi.com/v1/fixtures?start_time={holnap_str}"
-        res_fixtures_holnap = requests.get(url_fixtures_holnap, headers=headers)
-        if res_fixtures_holnap.status_code == 200:
-            fixtures_data_holnap = res_fixtures_holnap.json()
-            if 'data' in fixtures_data_holnap:
-                for fix in fixtures_data_holnap['data']:
-                    league_name = fix.get('league', {}).get('name', '')
-                    if not any(top in league_name for top in TOP_LEAGUE_NAMES):
-                        continue
-                    kezdes_str = fix.get('kickoff_utc', '')
-                    if not kezdes_str: continue
-                    try:
-                        kezdes_dt = datetime.fromisoformat(kezdes_str.replace('Z', '+00:00'))
-                        if kezdes_dt <= most_utc: continue
-                    except: continue
-                    jeloltek.append(fix)
+    with st.spinner("1. lépés: Következő 3 nap top-5 liga meccseinek letöltése..."):
+        # Végigmegyünk a következő 3 napon (ma + 2 nap)
+        for nap_offset in range(3):
+            datum = most_utc + timedelta(days=nap_offset)
+            datum_str = datum.strftime("%Y-%m-%d")
+            url_fixtures = f"https://api.5dollarfootballapi.com/v1/fixtures?start_time={datum_str}"
+            res_fixtures = requests.get(url_fixtures, headers=headers)
+            
+            if res_fixtures.status_code == 200:
+                fixtures_data = res_fixtures.json()
+                if 'data' in fixtures_data:
+                    for fix in fixtures_data['data']:
+                        league_name = fix.get('league', {}).get('name', '')
+                        if not any(top in league_name for top in TOP_LEAGUE_NAMES):
+                            continue
+                        
+                        kezdes_str = fix.get('kickoff_utc', '')
+                        if not kezdes_str: continue
+                        try:
+                            kezdes_dt = datetime.fromisoformat(kezdes_str.replace('Z', '+00:00'))
+                            if kezdes_dt <= most_utc: continue
+                        except: continue
+                        
+                        jeloltek.append(fix)
 
     # 2. lépés: A legjobb meccsek kiválasztása és statisztikák lekérése
     vegso_lista = []
     if jeloltek:
         with st.spinner("2. lépés: Statisztikák (tabella, forma) letöltése..."):
-            # Tabellák lekérése (a dokumentáció szerint a data->table alatt van a tabella)
+            # Tabellák lekérése - A DOKUMENTÁCIÓ SZERINT: data -> standings
             tabellak = {}
             liga_id_k = set(fix['league']['id'] for fix in jeloltek)
             for lid in liga_id_k:
@@ -141,8 +123,8 @@ try:
                     res_table = requests.get(f"https://api.5dollarfootballapi.com/v1/standings?league={lid}", headers=headers)
                     if res_table.status_code == 200:
                         table_data = res_table.json()
-                        if 'data' in table_data and 'table' in table_data['data']:
-                            tabellak[lid] = table_data['data']['table']
+                        if 'data' in table_data and 'standings' in table_data['data']:
+                            tabellak[lid] = table_data['data']['standings']
                 except: pass
             
             for fix in jeloltek[:MAX_LISTA * 2]:
@@ -248,9 +230,9 @@ try:
             vegso_lista = vegso_lista[:MAX_LISTA]
 
     if not vegso_lista:
-        st.warning("📭 Nincs olyan top-5 ligás meccs (ma vagy holnap), ami megfelelne a feltételeknek.")
+        st.warning("📭 Nincs olyan top-5 ligás meccs (a következő 3 napban), ami megfelelne a feltételeknek.")
     else:
-        st.success(f"✅ A legbiztosabb {len(vegso_lista)} top-5 ligás meccs (ma és holnap):")
+        st.success(f"✅ A legbiztosabb {len(vegso_lista)} top-5 ligás meccs (következő 3 nap):")
         
         for i, j in enumerate(vegso_lista, 1):
             cim = f"🟡 | {j['meccs']}  —  Biztonsági pont: {j['biztonsagi_pont']}"
