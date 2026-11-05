@@ -17,19 +17,20 @@ st.markdown("""
         text-align: center; margin-bottom: 20px;
     }
     
+    /* Normál kártyák (zöld/sárga) */
     .streamlit-expanderHeader {
         background-color: #1E252B !important; border-radius: 8px !important;
         color: #FACC15 !important; font-weight: 800 !important; font-size: 1.4em !important; 
         border: 1px solid #444 !important; padding: 15px 20px !important; margin-bottom: 8px;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
-    
     .streamlit-expanderContent {
         background-color: #161A1F !important; border: 1px solid #444 !important;
         border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important;
         padding: 15px !important;
     }
     
+    /* Gombok */
     .stButton>button {
         background-color: #FACC15; color: #000000; font-weight: 700; font-size: 1.1em;
         border-radius: 6px; border: none; padding: 10px 15px; width: 100%;
@@ -37,6 +38,7 @@ st.markdown("""
     }
     .stButton>button:hover { background-color: #EAB308; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     
+    /* Óra */
     .clock-container { display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 15px; }
     .live-clock {
         font-family: 'Courier New', monospace; font-size: 1.6em; color: #FACC15;
@@ -60,6 +62,40 @@ st.markdown("""
     }
     .suggested-bet {
         color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 10px;
+    }
+    
+    /* KOMBINÁCIÓS KÁRTYA - TELJESEN MÁS SZÍN (LILA/ARANY) */
+    .kombi-box {
+        background: linear-gradient(135deg, #2D1B4E, #4A2C6D);
+        border: 2px solid #9D4EDD;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 30px;
+        box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4);
+    }
+    .kombi-title {
+        color: #FACC15; /* Arany szín */
+        font-size: 1.8em;
+        font-weight: 900;
+        text-align: center;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    .kombi-item {
+        color: #FFFFFF;
+        font-size: 1.1em;
+        margin-bottom: 8px;
+        padding-left: 10px;
+        border-left: 3px solid #FACC15;
+    }
+    .kombi-odds {
+        color: #22C55E;
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 15px;
+        text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -93,27 +129,17 @@ ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
 KUSZOB_MIN = 0.80  # 80%-os szigorú minimum küszöb
 MAX_LISTA = 3      
 
-if "kivalasztott_tippek" not in st.session_state:
-    st.session_state.kivalasztott_tippek = []
-
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
-    st.session_state.kivalasztott_tippek = []
 
 # --- JAVASOLT TÉT SZÁMÍTÁSA ---
 def javasolt_tet(esely):
-    if esely >= 0.98:
-        return 1000
-    elif esely >= 0.95:
-        return 800
-    elif esely >= 0.90:
-        return 500
-    elif esely >= 0.85:
-        return 300
-    elif esely >= 0.80:
-        return 200
-    else:
-        return 100
+    if esely >= 0.98: return 1000
+    elif esely >= 0.95: return 800
+    elif esely >= 0.90: return 500
+    elif esely >= 0.85: return 300
+    elif esely >= 0.80: return 200
+    else: return 100
 
 try:
     most_utc = datetime.now(pytz.utc)
@@ -142,7 +168,6 @@ try:
                         kezdes_hu = kezdes_utc.astimezone(hu_tz)
                     except: continue
                     
-                    # 1X2 és Kétesély esélyeinek kiszámítása
                     h2h_odds = {}
                     nyers_osszeg_globalis = 0
                     
@@ -152,7 +177,7 @@ try:
                                 kimenetek = market['outcomes']
                                 nyers_oddsok = [k['price'] for k in kimenetek]
                                 nyers_osszeg = sum([1/o for o in nyers_oddsok])
-                                nyers_osszeg_globalis = nyers_osszeg # elmentjük a képletbez
+                                nyers_osszeg_globalis = nyers_osszeg 
                                 
                                 for k in kimenetek:
                                     if k['name'] == m['home_team']: h2h_odds['hazai'] = k['price']
@@ -163,19 +188,11 @@ try:
                     if 'hazai' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
                         esely_1x = (1/h2h_odds['hazai'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
                         odds_1x = 1 / esely_1x if esely_1x > 0 else 0
-                        ketesely_opciok.append({
-                            'nev': f"{m['home_team']} vagy Döntetlen (1X)",
-                            'esely': esely_1x,
-                            'odds': odds_1x
-                        })
+                        ketesely_opciok.append({'nev': f"{m['home_team']} vagy Döntetlen (1X)", 'esely': esely_1x, 'odds': odds_1x})
                     if 'vendeg' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
                         esely_x2 = (1/h2h_odds['vendeg'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
                         odds_x2 = 1 / esely_x2 if esely_x2 > 0 else 0
-                        ketesely_opciok.append({
-                            'nev': f"{m['away_team']} vagy Döntetlen (X2)",
-                            'esely': esely_x2,
-                            'odds': odds_x2
-                        })
+                        ketesely_opciok.append({'nev': f"{m['away_team']} vagy Döntetlen (X2)", 'esely': esely_x2, 'odds': odds_x2})
                     
                     legjobb_ketesely = None
                     for opcio in ketesely_opciok:
@@ -192,8 +209,6 @@ try:
                                 'esely': legjobb_ketesely['esely'],
                                 'opcio_nev': legjobb_ketesely['nev'],
                                 'odds': legjobb_ketesely['odds'],
-                                'hazai': m['home_team'],
-                                'vendeg': m['away_team']
                             }
     
     jeloltek = list(jeloltek_dict.values())
@@ -214,12 +229,38 @@ try:
                 st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
                 st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
                 
-                # Javasolt tét kiszámítása és megjelenítése
                 tet = javasolt_tet(j['esely'])
                 st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
                 
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
+
+        # ==========================================
+        # KOMBINÁCIÓS KÁRTYA (Külön szín)
+        # ==========================================
+        if len(top_lista) >= 2:
+            kombi_meccsek = top_lista[:3] # Ha van 3, akkor 3, ha csak 2, akkor 2
+            
+            kombi_odds = 1.0
+            kombi_esely = 1.0
+            
+            for k in kombi_meccsek:
+                kombi_odds *= k['odds']
+                kombi_esely *= k['esly'] if 'esly' in k else k['esely']
+
+            st.markdown(f"""
+            <div class="kombi-box">
+                <div class="kombi-title">🔥 Napi Kombináció ({len(kombi_meccsek)} meccs)</div>
+                {"".join([f"<div class='kombi-item'>✅ {k['meccs']} - {k['opcio_nev']}</div>" for k in kombi_meccsek])}
+                <div class="kombi-odds">📈 Kombinált Odds: {kombi_odds:.2f}</div>
+                <div style="text-align: center; color: #FACC15; margin-top: 10px;">
+                    <b>Kombinált esély:</b> {kombi_esely*100:.1f}% (Veszteség esélye: {(1-kombi_esely)*100:.1f}%)
+                </div>
+                <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 15px;">
+                    💰 Javasolt tét: 200 Ft (Kis tét, mert kombináció!)
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 except Exception as e:
     st.error("Váratlan hiba történt: " + str(e))
