@@ -58,6 +58,9 @@ st.markdown("""
         padding: 10px; margin-bottom: 15px; border-radius: 4px; color: #E0E0E0;
         font-size: 0.9em;
     }
+    .suggested-bet {
+        color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -88,8 +91,7 @@ A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tud
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
 KUSZOB_MIN = 0.80  # 80%-os szigorú minimum küszöb
-MAX_LISTA = 3      # Maximum 3 meccs
-MAX_TIPP = 3       # Maximum 3 tipp a szelvényen
+MAX_LISTA = 3      
 
 if "kivalasztott_tippek" not in st.session_state:
     st.session_state.kivalasztott_tippek = []
@@ -97,6 +99,21 @@ if "kivalasztott_tippek" not in st.session_state:
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
     st.session_state.kivalasztott_tippek = []
+
+# --- JAVASOLT TÉT SZÁMÍTÁSA ---
+def javasolt_tet(esely):
+    if esely >= 0.98:
+        return 1000
+    elif esely >= 0.95:
+        return 800
+    elif esely >= 0.90:
+        return 500
+    elif esely >= 0.85:
+        return 300
+    elif esely >= 0.80:
+        return 200
+    else:
+        return 100
 
 try:
     most_utc = datetime.now(pytz.utc)
@@ -126,10 +143,8 @@ try:
                     except: continue
                     
                     # 1X2 és Kétesély esélyeinek kiszámítása
-                    legjobb_h2h_esely = 0
-                    legjobb_h2h_nev = ""
-                    legjobb_h2h_odds = 0
                     h2h_odds = {}
+                    nyers_osszeg_globalis = 0
                     
                     for iroda in m.get('bookmakers', []):
                         for market in iroda.get('markets', []):
@@ -137,39 +152,24 @@ try:
                                 kimenetek = market['outcomes']
                                 nyers_oddsok = [k['price'] for k in kimenetek]
                                 nyers_osszeg = sum([1/o for o in nyers_oddsok])
+                                nyers_osszeg_globalis = nyers_osszeg # elmentjük a képletbez
                                 
                                 for k in kimenetek:
-                                    esely = (1 / k['price']) / nyers_osszeg
-                                    
-                                    if k['name'] == m['home_team']:
-                                        h2h_odds['hazai'] = k['price']
-                                        if esely > legjobb_h2h_esely:
-                                            legjobb_h2h_esely = esely
-                                            legjobb_h2h_nev = f"{m['home_team']} (Hazai)"
-                                            legjobb_h2h_odds = k['price']
-                                    elif k['name'] == m['away_team']:
-                                        h2h_odds['vendeg'] = k['price']
-                                        if esely > legjobb_h2h_esely:
-                                            legjobb_h2h_esely = esely
-                                            legjobb_h2h_nev = f"{m['away_team']} (Vendég)"
-                                            legjobb_h2h_odds = k['price']
-                                    elif k['name'] == "Draw":
-                                        h2h_odds['dontetlen'] = k['price']
+                                    if k['name'] == m['home_team']: h2h_odds['hazai'] = k['price']
+                                    elif k['name'] == m['away_team']: h2h_odds['vendeg'] = k['price']
+                                    elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
                     
-                    # Kétesély (1X, X2) esélyeinek kiszámítása
                     ketesely_opciok = []
-                    if 'hazai' in h2h_odds and 'dontetlen' in h2h_odds:
-                        # 1X (Hazai vagy Döntetlen) - a nyers valószínűségek összege
-                        esely_1x = (1/h2h_odds['hazai'] + 1/h2h_odds['dontetlen']) / nyers_osszeg
+                    if 'hazai' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
+                        esely_1x = (1/h2h_odds['hazai'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
                         odds_1x = 1 / esely_1x if esely_1x > 0 else 0
                         ketesely_opciok.append({
                             'nev': f"{m['home_team']} vagy Döntetlen (1X)",
                             'esely': esely_1x,
                             'odds': odds_1x
                         })
-                    if 'vendeg' in h2h_odds and 'dontetlen' in h2h_odds:
-                        # X2 (Vendég vagy Döntetlen)
-                        esely_x2 = (1/h2h_odds['vendeg'] + 1/h2h_odds['dontetlen']) / nyers_osszeg
+                    if 'vendeg' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
+                        esely_x2 = (1/h2h_odds['vendeg'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
                         odds_x2 = 1 / esely_x2 if esely_x2 > 0 else 0
                         ketesely_opciok.append({
                             'nev': f"{m['away_team']} vagy Döntetlen (X2)",
@@ -177,21 +177,19 @@ try:
                             'odds': odds_x2
                         })
                     
-                    # Kiválasztjuk a legjobb Kétesély opciót
                     legjobb_ketesely = None
                     for opcio in ketesely_opciok:
                         if opcio['esely'] >= KUSZOB_MIN:
                             if legjobb_ketesely is None or opcio['esely'] > legjobb_ketesely['esely']:
                                 legjobb_ketesely = opcio
                     
-                    # Ha van 80% feletti Kétesély, akkor bekerül a listára
                     if legjobb_ketesely:
                         meccs_nev = f"{m['home_team']} - {m['away_team']}"
                         if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
                             jeloltek_dict[meccs_nev] = {
                                 'meccs': meccs_nev,
                                 'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
-                                'esely': legjobb_ketesely['esly'] if 'esly' in legjobb_ketesely else legjobb_ketesely['esely'],
+                                'esely': legjobb_ketesely['esely'],
                                 'opcio_nev': legjobb_ketesely['nev'],
                                 'odds': legjobb_ketesely['odds'],
                                 'hazai': m['home_team'],
@@ -213,49 +211,15 @@ try:
             with st.expander(cim, expanded=True):
                 st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                 
-                # Motivációs figyelmeztetés
-                st.markdown(f"""
-                <div class="warning-box">
-                ⚠️ <b>Motivációs csapda:</b> Ellenőrizd, hogy az egyik csapatnak nincs-e "muszáj nyernie" helyzete (bajnoki cím, kiesés elleni harc), 
-                mert az felülírhatja a statisztikákat!
-                </div>
-                """, unsafe_allow_html=True)
-                
                 st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
                 st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
                 
-                # Csak akkor engedi a kiválasztást, ha nincs tele a szelvény
-                if len(st.session_state.kivalasztott_tippek) >= MAX_TIPP:
-                    st.warning(f"⚠️ Elérted a napi limitet ({MAX_TIPP} tipp). Ne tegyél fel többet ma!")
-                else:
-                    if st.button(f"Kiválasztom: {j['opcio_nev']}", key=f"sel_{i}"):
-                        st.session_state.kivalasztott_tippek.append({
-                            'meccs': j['meccs'],
-                            'opcio': j['opcio_nev'],
-                            'odds': j['odds'],
-                            'esely': j['esely']
-                        })
-                        st.experimental_rerun()
-
+                # Javasolt tét kiszámítása és megjelenítése
+                tet = javasolt_tet(j['esely'])
+                st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
-
-    # --- KIVÁLASZTOTT TIPPEK (Napi limit) ---
-    if len(st.session_state.kivalasztott_tippek) > 0:
-        st.markdown("---")
-        st.header(f"🧾 Kiválasztott tippek ({len(st.session_state.kivalasztott_tippek)}/{MAX_TIPP})")
-        
-        ossz_odds = 1.0
-        for t in st.session_state.kivalasztott_tippek:
-            st.write(f"- {t['meccs']} ➡️ **{t['opcio']}** (Odds: {t['odds']}, Esély: {t['esely']*100:.1f}%)")
-            ossz_odds *= float(t['odds'])
-        
-        st.info(f"📈 **Összesített Odds (ha kombinálod):** {ossz_odds:.2f}")
-        st.success(f"💰 **Várható Nyeremény (1000 Ft-ból):** {1000 * ossz_odds:.0f} Ft")
-        
-        if st.button("🗑️ Kiválasztott tippek törlése"):
-            st.session_state.kivalasztott_tippek = []
-            st.experimental_rerun()
 
 except Exception as e:
     st.error("Váratlan hiba történt: " + str(e))
