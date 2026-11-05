@@ -88,6 +88,12 @@ st.markdown("""
         margin-bottom: 8px;
         padding-left: 10px;
         border-left: 3px solid #FACC15;
+        display: flex;
+        justify-content: space-between;
+    }
+    .kombi-percent {
+        color: #22C55E;
+        font-weight: bold;
     }
     .kombi-odds {
         color: #22C55E;
@@ -247,9 +253,13 @@ try:
             kombi_odds = 1.0
             kombi_esely = 1.0
             
+            # A HTML string összeállítása a meccsek százalékaival
+            kombi_html_elemek = ""
             for k in kombi_meccsek:
                 kombi_odds *= k['odds']
                 kombi_esely *= k['esely']
+                # Itt adjuk hozzá a százalékot a meccs neve mellé
+                kombi_html_elemek += f"<div class='kombi-item'><span>✅ {k['meccs']} - {k['opcio_nev']}</span> <span class='kombi-percent'>({k['esely']*100:.1f}%)</span></div>"
 
             kombi_tet = 200
             kombi_nyeremeny = kombi_tet * kombi_odds
@@ -257,7 +267,7 @@ try:
             st.markdown(f"""
             <div class="kombi-box">
                 <div class="kombi-title">🔥 Napi Kombináció ({len(kombi_meccsek)} meccs)</div>
-                {"".join([f"<div class='kombi-item'>✅ {k['meccs']} - {k['opcio_nev']}</div>" for k in kombi_meccsek])}
+                {kombi_html_elemek}
                 <div class="kombi-odds">📈 Kombinált Odds: {kombi_odds:.2f}</div>
                 <div style="text-align: center; color: #FACC15; margin-top: 10px;">
                     <b>Kombinált esély:</b> {kombi_esely*100:.1f}% (Veszteség esélye: {(1-kombi_esely)*100:.1f}%)
