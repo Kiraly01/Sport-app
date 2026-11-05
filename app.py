@@ -126,7 +126,7 @@ A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tud
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.80  # 80%-os szigorú minimum küszöb
+KUSZOB_MIN = 0.80
 MAX_LISTA = 3      
 
 if st.button("🔄 Adatok frissítése"):
@@ -230,7 +230,10 @@ try:
                 st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
                 
                 tet = javasolt_tet(j['esely'])
+                varhato_nyeremeny = tet * j['odds']
+                netto = varhato_nyeremeny - tet
                 st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
                 
                 st.markdown("---")
                 st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
@@ -239,14 +242,17 @@ try:
         # KOMBINÁCIÓS KÁRTYA (Külön szín)
         # ==========================================
         if len(top_lista) >= 2:
-            kombi_meccsek = top_lista[:3] # Ha van 3, akkor 3, ha csak 2, akkor 2
+            kombi_meccsek = top_lista[:3] 
             
             kombi_odds = 1.0
             kombi_esely = 1.0
             
             for k in kombi_meccsek:
                 kombi_odds *= k['odds']
-                kombi_esely *= k['esly'] if 'esly' in k else k['esely']
+                kombi_esely *= k['esely']
+
+            kombi_tet = 200
+            kombi_nyeremeny = kombi_tet * kombi_odds
 
             st.markdown(f"""
             <div class="kombi-box">
@@ -257,7 +263,10 @@ try:
                     <b>Kombinált esély:</b> {kombi_esely*100:.1f}% (Veszteség esélye: {(1-kombi_esely)*100:.1f}%)
                 </div>
                 <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 15px;">
-                    💰 Javasolt tét: 200 Ft (Kis tét, mert kombináció!)
+                    💰 Javasolt tét: {kombi_tet} Ft
+                </div>
+                <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.1em; margin-top: 5px;">
+                    📈 Várható nyeremény: {kombi_nyeremeny:.0f} Ft (Nettó: +{kombi_nyeremeny - kombi_tet:.0f} Ft)
                 </div>
             </div>
             """, unsafe_allow_html=True)
