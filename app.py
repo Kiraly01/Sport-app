@@ -23,11 +23,11 @@ st.markdown("""
         margin-top: 30px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     }
     .top3-card .streamlit-expanderHeader {
-        background-color: #2D1B00 !important; /* Sötét aranybarna háttér */
+        background-color: #2D1B00 !important; 
         border-radius: 8px !important;
-        color: #FFD700 !important; /* Arany szöveg */
+        color: #FFD700 !important; 
         font-weight: 900 !important; font-size: 1.4em !important; 
-        border: 2px solid #FFD700 !important; /* Arany keret */
+        border: 2px solid #FFD700 !important; 
         padding: 15px 20px !important; margin-bottom: 8px;
     }
     .top3-card .streamlit-expanderContent {
@@ -42,9 +42,9 @@ st.markdown("""
         margin-top: 30px; margin-bottom: 20px;
     }
     .other-card .streamlit-expanderHeader {
-        background-color: #1E252B !important; /* Sötétszürke háttér */
+        background-color: #1E252B !important; 
         border-radius: 8px !important;
-        color: #A0AAB5 !important; /* Szürkés szöveg */
+        color: #A0AAB5 !important; 
         font-weight: 600 !important; font-size: 1.1em !important; 
         border: 1px solid #444 !important;
         padding: 12px 15px !important; margin-bottom: 5px;
@@ -105,7 +105,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Tipp (48 óra)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Tipp (72 óra)</h1>", unsafe_allow_html=True)
 
 # ==========================================
 # ÉLŐ ÓRA
@@ -124,7 +124,7 @@ ora_frissites()
 
 st.markdown("""
 <div class="warning-box">
-⚠️ <b>FIGYELEM!</b> Az app a következő 48 óra legbiztonságosabb tippjeit mutatja (80% feletti esély, Kétesély). 
+⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (80% feletti esély, Kétesély). 
 A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tudsz veszíteni!
 </div>
 """, unsafe_allow_html=True)
@@ -149,6 +149,7 @@ try:
     most_utc = datetime.now(pytz.utc)
     hu_tz = pytz.timezone('Europe/Budapest')
     
+    # 72 órás lekérdezés: ma, holnap, holnapután (3 nap)
     datumok = []
     for i in range(3): 
         datum = most_utc + timedelta(days=i)
@@ -156,7 +157,7 @@ try:
     
     jeloltek_dict = {}
     
-    with st.spinner("Biztonságos foci meccsek keresése (48 óra)..."):
+    with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
         for datum in datumok:
             url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={datum}T00:00:00Z&commenceTimeTo={datum}T23:59:59Z"
             valasz = requests.get(url)
@@ -224,7 +225,7 @@ try:
     top_lista = jeloltek[:MAX_LISTA]
 
     if not top_lista:
-        st.warning(f"📭 Nincs olyan jövőbeli foci meccs (48 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_MIN*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
+        st.warning(f"📭 Nincs olyan jövőbeli foci meccs (72 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_MIN*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
     else:
         # --- TOP 3 KIEMELÉSE (ARANY SZÍNEK) ---
         st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP ⭐</div>", unsafe_allow_html=True)
