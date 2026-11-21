@@ -143,97 +143,83 @@ def javasolt_tet(esely):
     elif esely >= 0.90: return 500
     elif esely >= 0.85: return 300
     elif esely >= 0.80: return 200
-    elif esely >= 0.75: return 150 # Új sáv a 75%-hoz
+    elif esely >= 0.75: return 150
     else: return 100
 
 try:
     most_utc = datetime.now(pytz.utc)
     hu_tz = pytz.timezone('Europe/Budapest')
     
-    # 3 nap lekérdezése (ma, holnap, holnapután)
-    datumok = []
-    for i in range(3): 
-        datum = most_utc + timedelta(days=i)
-        datumok.append(datum.strftime("%Y-%m-%d"))
+    # EGYETLEN lekérdezés a következő 72 órára (ma 00:00-tól 3 nap múlva 23:59-ig)
+    kezdo_datum = most_utc.strftime("%Y-%m-%dT00:00:00Z")
+    veg_datum = (most_utc + timedelta(days=2)).strftime("%Y-%m-%dT23:59:59Z")
+    
+    url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={kezdo_datum}&commenceTimeTo={veg_datum}"
     
     jeloltek_dict = {}
-    debug_info = [] # Diagnosztikai lista
     
     with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
-        for datum in datumok:
-            # Itt van a hiba javítva: teljes ISO formátum
-            from_time = f"{datum}T00:00:00Z"
-            to_time = f"{datum}T23:59:59Z"
+        valasz = requests.get(url)
+        
+        if valasz.status_code == 200:
+            meccsek = valasz.json()
             
-            url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={from_time}&commenceTimeTo={to_time}"
-            valasz = requests.get(url)
-            
-            if valasz.status_code == 200:
-                meccsek = valasz.json()
-                debug_info.append(f"{datum}: {len(meccsek)} meccs letöltve.")
+            for m in meccsek:
+                idopont_nyers = m.get('commence_time', '')
+                if not idopont_nyers: continue
                 
-                for m in meccsek:
-                    idopont_nyers = m.get('commence_time', '')
-                    if not idopont_nyers: continue
-                    
-                    try:
-                        kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
-                        if kezdes_utc <= most_utc: continue
-                        kezdes_hu = kezdes_utc.astimezone(hu_tz)
-                    except: continue
-                    
-                    h2h_odds = {}
-                    nyers_osszeg_globalis = 0
-                    
-                    for iroda in m.get('bookmakers', []):
-                        for market in iroda.get('markets', []):
-                            if market['key'] == 'h2h':
-                                kimenetek = market['outcomes']
-                                nyers_oddsok = [k['price'] for k in kimenetek]
-                                nyers_osszeg = sum([1/o for o in nyers_oddsok])
-                                nyers_osszeg_globalis = nyers_osszeg 
-                                
-                                for k in kimenetek:
-                                    if k['name'] == m['home_team']: h2h_odds['hazai'] = k['price']
-                                    elif k['name'] == m['away_team']: h2h_odds['vendeg'] = k['price']
-                                    elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
-                    
-                    ketesely_opciok = []
-                    if 'hazai' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
-                        esely_1x = (1/h2h_odds['hazai'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
-                        odds_1x = 1 / esely_1x if esely_1x > 0 else 0
-                        ketesely_opciok.append({'nev': f"{m['home_team']} vagy Döntetlen (1X)", 'esely': esely_1x, 'odds': odds_1x})
-                    if 'vendeg' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
-                        esely_x2 = (1/h2h_odds['vendeg'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
-                        odds_x2 = 1 / esely_x2 if esely_x2 > 0 else 0
-                        ketesely_opciok.append({'nev': f"{m['away_team']} vagy Döntetlen (X2)", 'esely': esely_x2, 'odds': odds_x2})
-                    
-                    legjobb_ketesely = None
-                    for opcio in ketesely_opciok:
-                        if opcio['esely'] >= KUSZOB_MIN:
-                            if legjobb_ketesely is None or opcio['esely'] > legjobb_ketesely['esely']:
-                                legjobb_ketesely = opcio
-                    
-                    if legjobb_ketesely:
-                        meccs_nev = f"{m['home_team']} - {m['away_team']}"
-                        if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
-                            jeloltek_dict[meccs_nev] = {
-                                'meccs': meccs_nev,
-                                'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
-                                'esely': legjobb_ketesely['esely'],
-                                'opcio_nev': legjobb_ketesely['nev'],
-                                'odds': legjobb_ketesely['odds'],
-                                'hazai': m['home_team'],
-                                'vendeg': m['away_team']
-                            }
-            else:
-                debug_info.append(f"Hiba a {datum} lekérdezésekor: {valasz.status_code}")
-
-    # Diagnosztika kiírása (hogy lássuk, mi történt a háttérben)
-    with st.expander("🛠️ Diagnosztika (csak teszt)..."):
-        for info in debug_info:
-            st.write(info)
-        st.write(f"Összesen {len(jeloltek_dict)} meccs felelt meg a küszöbnek.")
+                try:
+                    kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
+                    if kezdes_utc <= most_utc: continue
+                    kezdes_hu = kezdes_utc.astimezone(hu_tz)
+                except: continue
+                
+                h2h_odds = {}
+                nyers_osszeg_globalis = 0
+                
+                for iroda in m.get('bookmakers', []):
+                    for market in iroda.get('markets', []):
+                        if market['key'] == 'h2h':
+                            kimenetek = market['outcomes']
+                            nyers_oddsok = [k['price'] for k in kimenetek]
+                            nyers_osszeg = sum([1/o for o in nyers_oddsok])
+                            nyers_osszeg_globalis = nyers_osszeg 
+                            
+                            for k in kimenetek:
+                                if k['name'] == m['home_team']: h2h_odds['hazai'] = k['price']
+                                elif k['name'] == m['away_team']: h2h_odds['vendeg'] = k['price']
+                                elif k['name'] == "Draw": h2h_odds['dontetlen'] = k['price']
+                
+                ketesely_opciok = []
+                if 'hazai' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
+                    esely_1x = (1/h2h_odds['hazai'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
+                    odds_1x = 1 / esely_1x if esely_1x > 0 else 0
+                    ketesely_opciok.append({'nev': f"{m['home_team']} vagy Döntetlen (1X)", 'esely': esely_1x, 'odds': odds_1x})
+                if 'vendeg' in h2h_odds and 'dontetlen' in h2h_odds and nyers_osszeg_globalis > 0:
+                    esely_x2 = (1/h2h_odds['vendeg'] + 1/h2h_odds['dontetlen']) / nyers_osszeg_globalis
+                    odds_x2 = 1 / esely_x2 if esely_x2 > 0 else 0
+                    ketesely_opciok.append({'nev': f"{m['away_team']} vagy Döntetlen (X2)", 'esely': esely_x2, 'odds': odds_x2})
+                
+                legjobb_ketesely = None
+                for opcio in ketesely_opciok:
+                    if opcio['esely'] >= KUSZOB_MIN:
+                        if legjobb_ketesely is None or opcio['esely'] > legjobb_ketesely['esely']:
+                            legjobb_ketesely = opcio
+                
+                if legjobb_ketesely:
+                    meccs_nev = f"{m['home_team']} - {m['away_team']}"
+                    if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
+                        jeloltek_dict[meccs_nev] = {
+                            'meccs': meccs_nev,
+                            'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
+                            'esely': legjobb_ketesely['esely'],
+                            'opcio_nev': legjobb_ketesely['nev'],
+                            'odds': legjobb_ketesely['odds'],
+                            'hazai': m['home_team'],
+                            'vendeg': m['away_team']
+                        }
+        else:
+            st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
 
     jeloltek = list(jeloltek_dict.values())
     jeloltek.sort(key=lambda x: x['esely'], reverse=True)
