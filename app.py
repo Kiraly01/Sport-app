@@ -124,14 +124,14 @@ ora_frissites()
 
 st.markdown("""
 <div class="warning-box">
-⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (80% feletti esély, Kétesély). 
+⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (75% feletti esély, Kétesély). 
 A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tudsz veszíteni!
 </div>
 """, unsafe_allow_html=True)
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.80  
+KUSZOB_MIN = 0.75  # Átmenetileg 75%-ra csökkentve, hogy lássuk, lejönnek-e a meccsek
 MAX_LISTA = 10     
 
 if st.button("🔄 Adatok frissítése"):
@@ -143,27 +143,34 @@ def javasolt_tet(esely):
     elif esely >= 0.90: return 500
     elif esely >= 0.85: return 300
     elif esely >= 0.80: return 200
+    elif esely >= 0.75: return 150 # Új sáv a 75%-hoz
     else: return 100
 
 try:
     most_utc = datetime.now(pytz.utc)
     hu_tz = pytz.timezone('Europe/Budapest')
     
-    # 72 órás lekérdezés: ma, holnap, holnapután (3 nap)
+    # 3 nap lekérdezése (ma, holnap, holnapután)
     datumok = []
     for i in range(3): 
         datum = most_utc + timedelta(days=i)
         datumok.append(datum.strftime("%Y-%m-%d"))
     
     jeloltek_dict = {}
+    debug_info = [] # Diagnosztikai lista
     
     with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
         for datum in datumok:
-            url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={datum}T00:00:00Z&commenceTimeTo={datum}T23:59:59Z"
+            # Itt van a hiba javítva: teljes ISO formátum
+            from_time = f"{datum}T00:00:00Z"
+            to_time = f"{datum}T23:59:59Z"
+            
+            url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={from_time}&commenceTimeTo={to_time}"
             valasz = requests.get(url)
             
             if valasz.status_code == 200:
                 meccsek = valasz.json()
+                debug_info.append(f"{datum}: {len(meccsek)} meccs letöltve.")
                 
                 for m in meccsek:
                     idopont_nyers = m.get('commence_time', '')
@@ -219,7 +226,15 @@ try:
                                 'hazai': m['home_team'],
                                 'vendeg': m['away_team']
                             }
-    
+            else:
+                debug_info.append(f"Hiba a {datum} lekérdezésekor: {valasz.status_code}")
+
+    # Diagnosztika kiírása (hogy lássuk, mi történt a háttérben)
+    with st.expander("🛠️ Diagnosztika (csak teszt)..."):
+        for info in debug_info:
+            st.write(info)
+        st.write(f"Összesen {len(jeloltek_dict)} meccs felelt meg a küszöbnek.")
+
     jeloltek = list(jeloltek_dict.values())
     jeloltek.sort(key=lambda x: x['esely'], reverse=True)
     top_lista = jeloltek[:MAX_LISTA]
