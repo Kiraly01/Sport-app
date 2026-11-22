@@ -131,7 +131,7 @@ A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tud
 
 # --- BEALLITASOK ---
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.75  # Átmenetileg 75%-ra csökkentve, hogy lássuk, lejönnek-e a meccsek
+KUSZOB_MIN = 0.80  # Átmenetileg 75%-ra csökkentve, hogy lássuk, lejönnek-e a meccsek
 MAX_LISTA = 10     
 
 if st.button("🔄 Adatok frissítése"):
