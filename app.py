@@ -118,7 +118,24 @@ try:
         
         if valasz.status_code == 200:
             meccsek = valasz.json()
+            if valasz.status_code == 200:
+            meccsek = valasz.json()
             
+            # --- DIAGNOSZTIKA (Ideiglenes) ---
+            st.info(f"🔍 DEBUG: Az API {len(meccsek)} meccset küldött vissza.")
+            if meccsek:
+                első = meccsek[0]
+                st.write(f"🔍 DEBUG: Első meccs: {első['home_team']} vs {első['away_team']}")
+                st.write(f"🔍 DEBUG: Kezdés (API): {első.get('commence_time')}")
+                irodak = első.get('bookmakers', [])
+                st.write(f"🔍 DEBUG: Fogadóirodák száma: {len(irodak)}")
+                if irodak:
+                    piacok = [m['key'] for m in irodak[0].get('markets', [])]
+                    st.write(f"🔍 DEBUG: Elérhető piacok: {piacok}")
+            # -----------------------------------
+            
+            for m in meccsek:
+                # ... (a többi kód marad)
             for m in meccsek:
                 idopont_nyers = m.get('commence_time', '')
                 if not idopont_nyers:
