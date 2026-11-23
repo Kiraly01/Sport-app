@@ -1,52 +1,60 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import requests
 from datetime import datetime, timedelta
 import pytz
 import statistics
 
+# ==========================================
+# KINÉZET (CSS)
+# ==========================================
 st.set_page_config(page_title="Napi Foci Tipp", page_icon="⚽", layout="centered")
-
-CSS = """
+st.markdown("""
 <style>
 .stApp { background-color: #12161A; color: #E0E0E0; }
-h1 { color: #FFFFFF; font-weight: 800; font-size: 2.2em; text-align: center; }
-.top3-header { color: #FFD700; font-size: 1.8em; font-weight: 900; text-align: center; margin-top: 20px; }
-.top3-card .streamlit-expanderHeader { background-color: #2D1B00 !important; color: #FFD700 !important; font-weight: 900 !important; border: 2px solid #FFD700 !important; }
-.other-header { color: #A0AAB5; font-size: 1.3em; font-weight: 700; text-align: center; margin-top: 20px; }
-.other-card .streamlit-expanderHeader { background-color: #1E252B !important; color: #A0AAB5 !important; border: 1px solid #444 !important; }
-.stButton>button { background-color: #FACC15; color: #000; font-weight: 700; border-radius: 6px; width: 100%; }
-.clock-container { text-align: center; margin: 10px 0; }
-.live-clock { font-family: monospace; font-size: 1.4em; color: #FACC15; background: #1E252B; padding: 8px 16px; border-radius: 8px; display: inline-block; }
-.warning-box { background: #332211; border-left: 4px solid #FACC15; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
-.suggested-bet { color: #22C55E; font-weight: bold; font-size: 1.1em; }
-.kombi-box { background: linear-gradient(135deg, #2D1B4E, #4A2C6D); border: 2px solid #9D4EDD; border-radius: 12px; padding: 15px; margin-top: 20px; }
-.kombi-title { color: #FACC15; font-size: 1.4em; font-weight: 900; text-align: center; }
-.kombi-odds { color: #22C55E; font-size: 1.3em; font-weight: bold; text-align: center; margin-top: 10px; }
-.copy-box { background: #1E252B; border: 1px solid #444; border-radius: 8px; padding: 12px; margin: 10px 0; font-family: monospace; font-size: 0.9em; color: #E0E0E0; }
-.new-tip-badge { background: #22C55E; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; }
-.stats-box { background: #1E252B; border: 1px solid #444; border-radius: 8px; padding: 12px; margin-top: 15px; }
+h1 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 800; font-size: 2.5em; text-align: center; margin-bottom: 20px; }
+.top3-header { color: #FFD700; font-size: 2em; font-weight: 900; text-align: center; margin-top: 30px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+.top3-card .streamlit-expanderHeader { background-color: #2D1B00 !important; border-radius: 8px !important; color: #FFD700 !important; font-weight: 900 !important; font-size: 1.4em !important; border: 2px solid #FFD700 !important; padding: 15px 20px !important; margin-bottom: 8px; }
+.top3-card .streamlit-expanderContent { background-color: #1A1000 !important; border: 2px solid #FFD700 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 20px !important; }
+.other-header { color: #A0AAB5; font-size: 1.5em; font-weight: 700; text-align: center; margin-top: 30px; margin-bottom: 20px; }
+.other-card .streamlit-expanderHeader { background-color: #1E252B !important; border-radius: 8px !important; color: #A0AAB5 !important; font-weight: 600 !important; font-size: 1.1em !important; border: 1px solid #444 !important; padding: 12px 15px !important; margin-bottom: 5px; }
+.other-card .streamlit-expanderContent { background-color: #161A1F !important; border: 1px solid #444 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 15px !important; }
+.stButton>button { background-color: #FACC15; color: #000000; font-weight: 700; font-size: 1.1em; border-radius: 6px; border: none; padding: 10px 15px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s; }
+.stButton>button:hover { background-color: #EAB308; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.clock-container { display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 15px; }
+.live-clock { font-family: 'Courier New', monospace; font-size: 1.6em; color: #FACC15; background-color: #1E252B; padding: 10px 20px; border-radius: 8px; border: 1px solid #444; font-weight: 800; letter-spacing: 1px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+.warning-box { background-color: #332211; border-left: 4px solid #FACC15; padding: 10px; margin-bottom: 15px; border-radius: 4px; color: #E0E0E0; font-size: 0.9em; }
+.suggested-bet { color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 10px; }
+.kombi-box { background: linear-gradient(135deg, #2D1B4E, #4A2C6D); border: 2px solid #9D4EDD; border-radius: 12px; padding: 20px; margin-top: 30px; box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4); }
+.kombi-title { color: #FACC15; font-size: 1.8em; font-weight: 900; text-align: center; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+.kombi-item { color: #FFFFFF; font-size: 1.1em; margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #FACC15; display: flex; justify-content: space-between; }
+.kombi-percent { color: #22C55E; font-weight: bold; }
+.kombi-odds { color: #22C55E; font-size: 1.5em; font-weight: bold; text-align: center; margin-top: 15px; text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+.median-info { background-color: #1E252B; border-left: 3px solid #FACC15; padding: 8px; margin-top: 10px; border-radius: 4px; font-size: 0.85em; color: #A0AAB5; }
 </style>
-"""
-st.markdown(CSS, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.markdown("<h1>⚽ Napi Foci Tipp (72 óra)</h1>", unsafe_allow_html=True)
 
+# ==========================================
+# ÉLŐ ÓRA (Nem fogyaszt API kreditet!)
+# ==========================================
 @st.fragment(run_every=1)
 def ora_frissites():
     hu_tz = pytz.timezone('Europe/Budapest')
-    ido = datetime.now(hu_tz)
-    html = '<div class="clock-container"><div class="live-clock">📅 ' + ido.strftime('%Y-%m-%d') + ' | ⏰ ' + ido.strftime('%H:%M:%S') + '</div></div>'
-    st.markdown(html, unsafe_allow_html=True)
+    aktualis_ido = datetime.now(hu_tz)
+    st.markdown(f"""
+    <div class="clock-container">
+        <div class="live-clock">📅 {aktualis_ido.strftime('%Y-%m-%d')} | ⏰ {aktualis_ido.strftime('%H:%M:%S')}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 ora_frissites()
 
 st.markdown("""
 <div class="warning-box">
-⚠️ <b>FIGYELEM!</b> 82% feletti Kétesély tippek. Medián alapú számítás. 
-🔔 <b>Új tipp értesítés</b> aktív (óránként ellenőriz). 
-📋 <b>1 kattintásos másolás</b> a Tippmixhez.
-A sportfogadás kockázattal jár!
+⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (<b>82% feletti esély</b>, Kétesély). 
+Az oddsok <b>medián</b> alapján számolódnak (több fogadóiroda átlagolt értéke).
+A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tudsz veszíteni!
 </div>
 """, unsafe_allow_html=True)
 
@@ -54,300 +62,191 @@ A sportfogadás kockázattal jár!
 # BEÁLLÍTÁSOK
 # ==========================================
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.82
-MIN_IRODAK = 2
+KUSZOB_MIN = 0.82  # BIZTONSÁGOS KÜSZÖB: 82%
+MIN_IRODAK = 2     # Minimum 2 fogadóiroda kell a számításhoz
 MAX_LISTA = 10
 
-# Session state
-if 'elozo_tippek' not in st.session_state:
-    st.session_state.elozo_tippek = set()
-if 'uj_tippek_szama' not in st.session_state:
-    st.session_state.uj_tippek_szama = 0
-if 'reggeli_mod' not in st.session_state:
-    st.session_state.reggeli_mod = False
+if st.button("🔄 Adatok frissítése"):
+    st.cache_data.clear()
+
+def javasolt_tet(esely):
+    if esely >= 0.98: return 1000
+    elif esely >= 0.95: return 800
+    elif esely >= 0.90: return 500
+    elif esely >= 0.85: return 300
+    elif esely >= 0.82: return 200
+    else: return 100
 
 # ==========================================
-# GOMBOK
-# ==========================================
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("🔄 Manuális frissítés"):
-        st.cache_data.clear()
-        st.session_state.reggeli_mod = False
-with col2:
-    if st.button("🌅 Reggeli összefoglaló"):
-        st.session_state.reggeli_mod = True
-        st.cache_data.clear()
-
-if st.session_state.reggeli_mod:
-    st.info("🌅 Reggeli mód: A nap összes meccsét listázza")
-
-# ==========================================
-# VÁGÓLAPRA MÁSOLÁS FÜGGVÉNY
-# ==========================================
-def vagolapra_masolo_gomb(szoveg, gomb_szoveg="📋 Másolás"):
-    js_code = """
-    <script>
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(function() {
-            alert('Másolva!');
-        }).catch(function() {
-            prompt('Másold ki manuálisan:', text);
-        });
-    }
-    </script>
-    """
-    components.html(js_code, height=0, width=0)
-    if st.button(gomb_szoveg, key="copy_" + str(hash(szoveg))):
-        st.code(szoveg, language="text")
-        st.success("✅ Szöveg kész! Jelöld ki és másold (Ctrl+C)")
-
-# ==========================================
-# API LEKÉRDEZÉS
-# ==========================================
-@st.cache_data(ttl=3600)
-def api_lekerdezes():
-    most_utc = datetime.now(pytz.utc)
-    kezdo = most_utc.strftime("%Y-%m-%dT00:00:00Z")
-    veg = (most_utc + timedelta(days=2)).strftime("%Y-%m-%dT23:59:59Z")
-    url = "https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey=" + ODDS_API_KEY + "&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom=" + kezdo + "&commenceTimeTo=" + veg
-    valasz = requests.get(url, timeout=10)
-    if valasz.status_code == 200:
-        return valasz.json()
-    return []
-
-# ==========================================
-# HÁTTÉRFIGYELÉS (ÓRÁNKÉNT)
-# ==========================================
-@st.fragment(run_every=3600)
-def hatter_figyeles():
-    try:
-        meccsek = api_lekerdezes()
-        uj_tippek = []
-        for m in meccsek:
-            idopont = m.get('commence_time', '')
-            if not idopont:
-                continue
-            try:
-                kezdes_utc = datetime.strptime(idopont, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
-                if kezdes_utc <= datetime.now(pytz.utc):
-                    continue
-            except:
-                continue
-            
-            hazai_oddsok = []
-            vendeg_oddsok = []
-            dontetlen_oddsok = []
-            for iroda in m.get('bookmakers', []):
-                for market in iroda.get('markets', []):
-                    if market['key'] == 'h2h':
-                        for k in market['outcomes']:
-                            if k['name'] == m['home_team']:
-                                hazai_oddsok.append(k['price'])
-                            elif k['name'] == m['away_team']:
-                                vendeg_oddsok.append(k['price'])
-                            elif k['name'] == "Draw":
-                                dontetlen_oddsok.append(k['price'])
-            
-            if len(hazai_oddsok) < MIN_IRODAK:
-                continue
-            
-            mh = statistics.median(hazai_oddsok)
-            mv = statistics.median(vendeg_oddsok)
-            md = statistics.median(dontetlen_oddsok)
-            nyers = (1/mh) + (1/mv) + (1/md)
-            if nyers <= 0:
-                continue
-            
-            esely_1x = (1/mh + 1/md) / nyers
-            esely_x2 = (1/mv + 1/md) / nyers
-            max_esely = max(esely_1x, esely_x2)
-            
-            if max_esely >= KUSZOB_MIN:
-                meccs_key = m['home_team'] + "_" + m['away_team']
-                if meccs_key not in st.session_state.elozo_tippek:
-                    uj_tippek.append(m['home_team'] + " - " + m['away_team'])
-                    st.session_state.elozo_tippek.add(meccs_key)
-        
-        if uj_tippek:
-            st.session_state.uj_tippek_szama += len(uj_tippek)
-            st.toast("🔔 ÚJ TIPP: " + ", ".join(uj_tippek[:3]), icon="🎯")
-    except:
-        pass
-
-hatter_figyeles()
-
-if st.session_state.uj_tippek_szama > 0:
-    st.success("🔔 " + str(st.session_state.uj_tippek_szama) + " új tipp észlelve a háttérben!")
-
-# ==========================================
-# FŐ LOGIKA
+# FŐ LOGIKA - MANUÁLIS INDÍTÁS
 # ==========================================
 try:
     most_utc = datetime.now(pytz.utc)
     hu_tz = pytz.timezone('Europe/Budapest')
-    meccsek = api_lekerdezes()
+    
+    kezdo_datum = most_utc.strftime("%Y-%m-%dT00:00:00Z")
+    veg_datum = (most_utc + timedelta(days=2)).strftime("%Y-%m-%dT23:59:59Z")
+    
+    url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={kezdo_datum}&commenceTimeTo={veg_datum}"
     
     jeloltek_dict = {}
     
-    with st.spinner("Meccsek elemzése..."):
-        for m in meccsek:
-            idopont = m.get('commence_time', '')
-            if not idopont:
-                continue
-            try:
-                kezdes_utc = datetime.strptime(idopont, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
-                if kezdes_utc <= most_utc:
+    with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
+        valasz = requests.get(url)
+        
+        if valasz.status_code == 200:
+            meccsek = valasz.json()
+            
+            for m in meccsek:
+                idopont_nyers = m.get('commence_time', '')
+                if not idopont_nyers:
                     continue
-                kezdes_hu = kezdes_utc.astimezone(hu_tz)
-            except:
-                continue
-            
-            hazai_oddsok = []
-            vendeg_oddsok = []
-            dontetlen_oddsok = []
-            for iroda in m.get('bookmakers', []):
-                for market in iroda.get('markets', []):
-                    if market['key'] == 'h2h':
-                        for k in market['outcomes']:
-                            if k['name'] == m['home_team']:
-                                hazai_oddsok.append(k['price'])
-                            elif k['name'] == m['away_team']:
-                                vendeg_oddsok.append(k['price'])
-                            elif k['name'] == "Draw":
-                                dontetlen_oddsok.append(k['price'])
-            
-            if len(hazai_oddsok) < MIN_IRODAK or len(vendeg_oddsok) < MIN_IRODAK or len(dontetlen_oddsok) < MIN_IRODAK:
-                continue
-            
-            mh = statistics.median(hazai_oddsok)
-            mv = statistics.median(vendeg_oddsok)
-            md = statistics.median(dontetlen_oddsok)
-            nyers = (1/mh) + (1/mv) + (1/md)
-            if nyers <= 0:
-                continue
-            
-            esely_1x = (1/mh + 1/md) / nyers
-            odds_1x = 1/esely_1x if esely_1x > 0 else 0
-            esely_x2 = (1/mv + 1/md) / nyers
-            odds_x2 = 1/esely_x2 if esely_x2 > 0 else 0
-            
-            opciok = [
-                {'nev': m['home_team'] + " vagy Döntetlen (1X)", 'esely': esely_1x, 'odds': odds_1x},
-                {'nev': m['away_team'] + " vagy Döntetlen (X2)", 'esely': esely_x2, 'odds': odds_x2}
-            ]
-            
-            legjobb = None
-            for o in opciok:
-                if o['esely'] >= KUSZOB_MIN:
-                    if legjobb is None or o['esely'] > legjobb['esely']:
-                        legjobb = o
-            
-            if legjobb:
-                meccs_nev = m['home_team'] + " - " + m['away_team']
-                if meccs_nev not in jeloltek_dict or legjobb['esely'] > jeloltek_dict[meccs_nev]['esely']:
-                    jeloltek_dict[meccs_nev] = {
-                        'meccs': meccs_nev,
-                        'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
-                        'esely': legjobb['esely'],
-                        'opcio_nev': legjobb['nev'],
-                        'odds': legjobb['odds'],
-                        'irodak': len(hazai_oddsok)
-                    }
+                
+                try:
+                    kezdes_utc = datetime.strptime(idopont_nyers, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
+                    if kezdes_utc <= most_utc:
+                        continue
+                    kezdes_hu = kezdes_utc.astimezone(hu_tz)
+                except (ValueError, TypeError):
+                    continue
+                
+                # Medián alapú odds gyűjtés
+                hazai_oddsok = []
+                vendeg_oddsok = []
+                dontetlen_oddsok = []
+                
+                for iroda in m.get('bookmakers', []):
+                    for market in iroda.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for k in market['outcomes']:
+                                if k['name'] == m['home_team']:
+                                    hazai_oddsok.append(k['price'])
+                                elif k['name'] == m['away_team']:
+                                    vendeg_oddsok.append(k['price'])
+                                elif k['name'] == "Draw":
+                                    dontetlen_oddsok.append(k['price'])
+                
+                # Minimum irodaszám ellenőrzés
+                if len(hazai_oddsok) < MIN_IRODAK or len(vendeg_oddsok) < MIN_IRODAK or len(dontetlen_oddsok) < MIN_IRODAK:
+                    continue
+                
+                # Medián számítás
+                median_hazai = statistics.median(hazai_oddsok)
+                median_vendeg = statistics.median(vendeg_oddsok)
+                median_dontetlen = statistics.median(dontetlen_oddsok)
+                
+                # Esély számítás (margin kiszűrése)
+                nyers_osszeg = (1/median_hazai) + (1/median_vendeg) + (1/median_dontetlen)
+                
+                if nyers_osszeg > 0:
+                    esely_1x = (1/median_hazai + 1/median_dontetlen) / nyers_osszeg
+                    odds_1x = 1 / esely_1x if esely_1x > 0 else 0
+                    
+                    esely_x2 = (1/median_vendeg + 1/median_dontetlen) / nyers_osszeg
+                    odds_x2 = 1 / esely_x2 if esely_x2 > 0 else 0
+                    
+                    ketesely_opciok = [
+                        {'nev': f"{m['home_team']} vagy Döntetlen (1X)", 'esely': esely_1x, 'odds': odds_1x},
+                        {'nev': f"{m['away_team']} vagy Döntetlen (X2)", 'esely': esely_x2, 'odds': odds_x2}
+                    ]
+                    
+                    legjobb_ketesely = None
+                    for opcio in ketesely_opciok:
+                        if opcio['esely'] >= KUSZOB_MIN:
+                            if legjobb_ketesely is None or opcio['esely'] > legjobb_ketesely['esely']:
+                                legjobb_ketesely = opcio
+                    
+                    if legjobb_ketesely:
+                        meccs_nev = f"{m['home_team']} - {m['away_team']}"
+                        if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
+                            jeloltek_dict[meccs_nev] = {
+                                'meccs': meccs_nev,
+                                'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
+                                'esely': legjobb_ketesely['esely'],
+                                'opcio_nev': legjobb_ketesely['nev'],
+                                'odds': legjobb_ketesely['odds'],
+                                'irodak_szama': len(hazai_oddsok)
+                            }
+        else:
+            st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
     
-    jeloltek = sorted(jeloltek_dict.values(), key=lambda x: x['esely'], reverse=True)[:MAX_LISTA]
+    # ==========================================
+    # MEGJELENÍTÉS
+    # ==========================================
+    jeloltek = list(jeloltek_dict.values())
+    jeloltek.sort(key=lambda x: x['esely'], reverse=True)
+    top_lista = jeloltek[:MAX_LISTA]
     
-    if not jeloltek:
-        st.warning("📭 Nincs " + str(int(KUSZOB_MIN*100)) + "% feletti meccs. Ma ne fogadj.")
+    if not top_lista:
+        st.warning(f"📭 Nincs olyan jövőbeli foci meccs (72 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_MIN*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
     else:
-        # ==========================================
-        # VÁGÓLAPRA MÁSOLÁS - TERVLISTA
-        # ==========================================
-        tervlista_szoveg = "⚽ NAPI FOCI TIPP TERVLISTA\n"
-        tervlista_szoveg += "========================\n"
-        tervlista_szoveg += "Dátum: " + datetime.now(hu_tz).strftime("%Y-%m-%d %H:%M") + "\n\n"
-        
-        for i, j in enumerate(jeloltek[:3], 1):
-            tet = 200 if j['esely'] >= 0.80 else 150
-            tervlista_szoveg += str(i) + ". " + j['meccs'] + "\n"
-            tervlista_szoveg += "   Tipp: " + j['opcio_nev'] + "\n"
-            tervlista_szoveg += "   Esély: " + str(round(j['esely']*100, 1)) + "% | Odds: " + str(round(j['odds'], 2)) + "\n"
-            tervlista_szoveg += "   Tét: " + str(tet) + " Ft\n\n"
-        
-        tervlista_szoveg += "🔥 KOMBINÁCIÓ (top 3):\n"
-        kombi_odds = 1.0
-        for k in jeloltek[:3]:
-            kombi_odds *= k['odds']
-        tervlista_szoveg += "   Össz odds: " + str(round(kombi_odds, 2)) + "\n"
-        tervlista_szoveg += "   Tét: 200 Ft | Nyeremény: " + str(round(200 * kombi_odds)) + " Ft\n"
-        
-        st.markdown("### 📋 Tervlista (1 kattintásos másolás)")
-        vagolapra_masolo_gomb(tervlista_szoveg, "📋 Tervlista másolása")
-        
-        # ==========================================
-        # TOP 3 MEGJELENÍTÉS
-        # ==========================================
+        # TOP 3
         st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP ⭐</div>", unsafe_allow_html=True)
-        
-        for i, j in enumerate(jeloltek[:3], 1):
+        for i, j in enumerate(top_lista[:3], 1):
             st.markdown("<div class='top3-card'>", unsafe_allow_html=True)
-            cim = "⭐ " + str(i) + " | " + j['meccs'] + " — " + j['opcio_nev'] + " (" + str(round(j['esely']*100, 1)) + "%)"
+            cim = f"⭐ | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
             with st.expander(cim, expanded=True):
-                st.markdown("📅 **Kezdés:** " + j['kezdes'])
-                st.markdown("**Tipp:** " + j['opcio_nev'])
-                st.markdown("**Esély:** " + str(round(j['esely']*100, 1)) + "% | **Odds:** " + str(round(j['odds'], 2)))
-                tet = 200 if j['esely'] >= 0.80 else 150
-                st.markdown("<div class='suggested-bet'>💰 Tét: " + str(tet) + " Ft</div>", unsafe_allow_html=True)
-                st.markdown("📈 Nyeremény: " + str(round(tet * j['odds'])) + " Ft (+" + str(round(tet * j['odds'] - tet)) + " Ft)")
-                st.markdown("🔒 " + str(j['irodak']) + " iroda mediánja")
-                st.markdown("[🔍 Tippmix](https://www.tippmix.hu/mobil/elo)")
+                st.markdown(f"<div style='font-size: 1em; color: #FFD700; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
+                st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
+                tet = javasolt_tet(j['esely'])
+                varhato_nyeremeny = tet * j['odds']
+                netto = varhato_nyeremeny - tet
+                st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda mediánja alapján</div>", unsafe_allow_html=True)
+                st.markdown("---")
+                st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
             st.markdown("</div>", unsafe_allow_html=True)
         
         # További meccsek
-        if len(jeloltek) > 3:
-            st.markdown("<div class='other-header'>További meccsek</div>", unsafe_allow_html=True)
-            for j in jeloltek[3:]:
+        if len(top_lista) > 3:
+            st.markdown("<div class='other-header'>További biztonságos meccsek</div>", unsafe_allow_html=True)
+            for i, j in enumerate(top_lista[3:], 4):
                 st.markdown("<div class='other-card'>", unsafe_allow_html=True)
-                cim = "🟡 " + j['meccs'] + " — " + j['opcio_nev'] + " (" + str(round(j['esely']*100, 1)) + "%)"
+                cim = f"🟡 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
                 with st.expander(cim, expanded=False):
-                    st.markdown("📅 **Kezdés:** " + j['kezdes'])
-                    st.markdown("**Tipp:** " + j['opcio_nev'])
-                    st.markdown("**Esély:** " + str(round(j['esely']*100, 1)) + "% | **Odds:** " + str(round(j['odds'], 2)))
-                    tet = 200 if j['esely'] >= 0.80 else 150
-                    st.markdown("💰 Tét: " + str(tet) + " Ft")
-                    st.markdown("📈 Nyeremény: " + str(round(tet * j['odds'])) + " Ft")
-                    st.markdown("[🔍 Tippmix](https://www.tippmix.hu/mobil/elo)")
+                    st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
+                    st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
+                    st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
+                    tet = javasolt_tet(j['esely'])
+                    varhato_nyeremeny = tet * j['odds']
+                    netto = varhato_nyeremeny - tet
+                    st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda mediánja alapján</div>", unsafe_allow_html=True)
+                    st.markdown("---")
+                    st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
                 st.markdown("</div>", unsafe_allow_html=True)
         
         # Kombináció
-        if len(jeloltek) >= 2:
-            kombi = jeloltek[:3]
+        if len(top_lista) >= 2:
+            kombi_meccsek = top_lista[:3]
             kombi_odds = 1.0
             kombi_esely = 1.0
-            kombi_html = ""
-            for k in kombi:
+            kombi_html_elemek = ""
+            for k in kombi_meccsek:
                 kombi_odds *= k['odds']
                 kombi_esely *= k['esely']
-                kombi_html += "<div style='color:white; margin:5px 0;'>✅ " + k['meccs'] + " - " + k['opcio_nev'] + " (" + str(round(k['esely']*100, 1)) + "%)</div>"
-            
-            html = '<div class="kombi-box">'
-            html += '<div class="kombi-title">🔥 Napi Kombináció (' + str(len(kombi)) + ' meccs)</div>'
-            html += kombi_html
-            html += '<div class="kombi-odds">📈 Odds: ' + str(round(kombi_odds, 2)) + '</div>'
-            html += '<div style="text-align:center; color:#FACC15; margin-top:10px;"><b>Esély:</b> ' + str(round(kombi_esely*100, 1)) + '%</div>'
-            html += '<div style="text-align:center; color:#22C55E; font-weight:bold; margin-top:10px;">💰 Tét: 200 Ft | Nyeremény: ' + str(round(200 * kombi_odds)) + ' Ft</div>'
-            html += '</div>'
-            st.markdown(html, unsafe_allow_html=True)
-        
-        # Statisztika
-        st.markdown("<div class='stats-box'>", unsafe_allow_html=True)
-        st.markdown("### 📊 Statisztika")
-        st.markdown("- **Aktuális tippek:** " + str(len(jeloltek)))
-        st.markdown("- **Átlag esély:** " + str(round(sum(x['esely'] for x in jeloltek) / len(jeloltek) * 100, 1)) + "%")
-        st.markdown("- **Háttérfigyelés:** ✅ Aktív (óránként)")
-        st.markdown("- **Új tippek észlelve:** " + str(st.session_state.uj_tippek_szama))
-        st.markdown("- **Medián számítás:** ✅")
-        st.markdown("</div>", unsafe_allow_html=True)
+                kombi_html_elemek += f"<div class='kombi-item'><span>✅ {k['meccs']} - {k['opcio_nev']}</span> <span class='kombi-percent'>({k['esely']*100:.1f}%)</span></div>"
+            kombi_tet = 200
+            kombi_nyeremeny = kombi_tet * kombi_odds
+            st.markdown(f"""
+            <div class="kombi-box">
+                <div class="kombi-title">🔥 Napi Kombináció ({len(kombi_meccsek)} meccs)</div>
+                {kombi_html_elemek}
+                <div class="kombi-odds">📈 Kombinált Odds: {kombi_odds:.2f}</div>
+                <div style="text-align: center; color: #FACC15; margin-top: 10px;">
+                    <b>Kombinált esély:</b> {kombi_esely*100:.1f}% (Veszteség esélye: {(1-kombi_esely)*100:.1f}%)
+                </div>
+                <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 15px;">
+                    💰 Javasolt tét: {kombi_tet} Ft
+                </div>
+                <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.1em; margin-top: 5px;">
+                    📈 Várható nyeremény: {kombi_nyeremeny:.0f} Ft (Nettó: +{kombi_nyeremeny - kombi_tet:.0f} Ft)
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 except Exception as e:
-    st.error("Hiba: " + str(e))
+    st.error("Váratlan hiba történt: " + str(e))
