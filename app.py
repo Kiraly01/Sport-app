@@ -18,15 +18,10 @@ h1 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 800; font
 .other-header { color: #A0AAB5; font-size: 1.5em; font-weight: 700; text-align: center; margin-top: 30px; margin-bottom: 20px; }
 .other-card .streamlit-expanderHeader { background-color: #1E252B !important; border-radius: 8px !important; color: #A0AAB5 !important; font-weight: 600 !important; font-size: 1.1em !important; border: 1px solid #444 !important; padding: 12px 15px !important; margin-bottom: 5px; }
 .other-card .streamlit-expanderContent { background-color: #161A1F !important; border: 1px solid #444 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 15px !important; }
-.risk-header { color: #FF8C00; font-size: 1.5em; font-weight: 700; text-align: center; margin-top: 30px; margin-bottom: 20px; }
-.risk-card .streamlit-expanderHeader { background-color: #3D2400 !important; border-radius: 8px !important; color: #FF8C00 !important; font-weight: 600 !important; font-size: 1.1em !important; border: 2px solid #FF8C00 !important; padding: 12px 15px !important; margin-bottom: 5px; }
-.risk-card .streamlit-expanderContent { background-color: #2A1900 !important; border: 2px solid #FF8C00 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 15px !important; }
-.risk-warning { background-color: #4D2E00; border-left: 4px solid #FF8C00; padding: 10px; margin-bottom: 15px; border-radius: 4px; color: #FFD700; font-size: 0.9em; font-weight: bold; }
 .stButton>button { background-color: #FACC15; color: #000000; font-weight: 700; font-size: 1.1em; border-radius: 6px; border: none; padding: 10px 15px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s; }
 .stButton>button:hover { background-color: #EAB308; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
 .clock-container { display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 15px; }
 .live-clock { font-family: 'Courier New', monospace; font-size: 1.6em; color: #FACC15; background-color: #1E252B; padding: 10px 20px; border-radius: 8px; border: 1px solid #444; font-weight: 800; letter-spacing: 1px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-.stMarkdown p { font-size: 1.1em; }
 .warning-box { background-color: #332211; border-left: 4px solid #FACC15; padding: 10px; margin-bottom: 15px; border-radius: 4px; color: #E0E0E0; font-size: 0.9em; }
 .suggested-bet { color: #22C55E; font-weight: bold; font-size: 1.2em; margin-top: 10px; }
 .kombi-box { background: linear-gradient(135deg, #2D1B4E, #4A2C6D); border: 2px solid #9D4EDD; border-radius: 12px; padding: 20px; margin-top: 30px; box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4); }
@@ -57,9 +52,7 @@ ora_frissites()
 
 st.markdown("""
 <div class="warning-box">
-⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (<b>82% feletti esély</b>, Kétesély). 
-Az oddsok <b>medián</b> alapján számolódnak (minimum 3 fogadóiroda adata).
-A <span style="color: #FF8C00; font-weight: bold;">narancs</span> színű meccsek rizikós ligákból vannak!
+⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (<b>75% feletti esély</b>, Kétesély).
 A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tudsz veszíteni!
 </div>
 """, unsafe_allow_html=True)
@@ -68,35 +61,28 @@ A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tud
 # BEÁLLÍTÁSOK
 # ==========================================
 ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.82  # BIZTONSÁGOS KÜSZÖB: 82%
-MIN_IRODAK = 3     # Minimum 3 fogadóiroda kell
-MAX_ODDS_SZORAS = 0.15 # Maximum elfogadható szórás
+KUSZOB_MIN = 0.75  # LAZÍTOTT KÜSZÖB: 75%
+MIN_IRODAK = 2     # Minimum 2 fogadóiroda
 MAX_LISTA = 10
-
-# RIZIKÓS LIGÁK
-RIZIKOS_KULCSSZAVAK = [
-    'friendly', 'baratsagos', 'amateur', 'youth', 'u19', 'u21', 'u17',
-    'women', 'reserve', 'b team', 'b csapat', 'cup qualification', 'kupa selejtezo',
-    'pre-season', 'felkeszules'
-]
 
 if st.button("🔄 Adatok frissítése"):
     st.cache_data.clear()
 
 def javasolt_tet(esely):
-    if esely >= 0.98: return 1000
-    elif esely >= 0.95: return 800
-    elif esely >= 0.90: return 500
-    elif esely >= 0.85: return 300
-    elif esely >= 0.82: return 200
-    else: return 100
-
-def rizikos_liga_e(sport_title):
-    sport_title_lower = sport_title.lower()
-    for kulcsszo in RIZIKOS_KULCSSZAVAK:
-        if kulcsszo in sport_title_lower:
-            return True
-    return False
+    if esely >= 0.98:
+        return 1000
+    elif esely >= 0.95:
+        return 800
+    elif esely >= 0.90:
+        return 500
+    elif esely >= 0.85:
+        return 300
+    elif esely >= 0.80:
+        return 200
+    elif esely >= 0.75:
+        return 150
+    else:
+        return 100
 
 # ==========================================
 # FŐ LOGIKA
@@ -111,31 +97,22 @@ try:
     url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={kezdo_datum}&commenceTimeTo={veg_datum}"
     
     jeloltek_dict = {}
-    rizikos_dict = {}
     
     with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
         valasz = requests.get(url)
         
         if valasz.status_code == 200:
             meccsek = valasz.json()
-            if valasz.status_code == 200:
-            meccsek = valasz.json()
             
-            # --- DIAGNOSZTIKA (Ideiglenes) ---
+            # DEBUG: Lássuk, mit küld az API
             st.info(f"🔍 DEBUG: Az API {len(meccsek)} meccset küldött vissza.")
-            if meccsek:
-                első = meccsek[0]
-                st.write(f"🔍 DEBUG: Első meccs: {első['home_team']} vs {első['away_team']}")
-                st.write(f"🔍 DEBUG: Kezdés (API): {első.get('commence_time')}")
-                irodak = első.get('bookmakers', [])
-                st.write(f"🔍 DEBUG: Fogadóirodák száma: {len(irodak)}")
-                if irodak:
-                    piacok = [m['key'] for m in irodak[0].get('markets', [])]
-                    st.write(f"🔍 DEBUG: Elérhető piacok: {piacok}")
-            # -----------------------------------
+            if len(meccsek) > 0:
+                elso = meccsek[0]
+                st.write(f"🔍 DEBUG: Első meccs: {elso.get('home_team')} vs {elso.get('away_team')}")
+                st.write(f"🔍 DEBUG: Kezdés (API): {elso.get('commence_time')}")
+                irodak = elso.get('bookmakers', [])
+                st.write(f"🔍 DEBUG: Fogadóirodák száma (első meccs): {len(irodak)}")
             
-            for m in meccsek:
-                # ... (a többi kód marad)
             for m in meccsek:
                 idopont_nyers = m.get('commence_time', '')
                 if not idopont_nyers:
@@ -149,10 +126,7 @@ try:
                 except (ValueError, TypeError):
                     continue
                 
-                sport_title = m.get('sport_title', '')
-                is_rizikos = rizikos_liga_e(sport_title)
-                
-                # Medián alapú odds gyűjtés
+                # Odds gyűjtés
                 hazai_oddsok = []
                 vendeg_oddsok = []
                 dontetlen_oddsok = []
@@ -177,15 +151,6 @@ try:
                 median_vendeg = statistics.median(vendeg_oddsok)
                 median_dontetlen = statistics.median(dontetlen_oddsok)
                 
-                # Szórás ellenőrzés
-                szoras_hazai = statistics.stdev(hazai_oddsok) if len(hazai_oddsok) > 1 else 0
-                szoras_vendeg = statistics.stdev(vendeg_oddsok) if len(vendeg_oddsok) > 1 else 0
-                szoras_dontetlen = statistics.stdev(dontetlen_oddsok) if len(dontetlen_oddsok) > 1 else 0
-                atlag_szoras = (szoras_hazai + szoras_vendeg + szoras_dontetlen) / 3
-                
-                if atlag_szoras > MAX_ODDS_SZORAS:
-                    continue
-                
                 # Esély számítás
                 nyers_osszeg = (1/median_hazai) + (1/median_vendeg) + (1/median_dontetlen)
                 
@@ -209,23 +174,15 @@ try:
                     
                     if legjobb_ketesely:
                         meccs_nev = f"{m['home_team']} - {m['away_team']}"
-                        meccs_adat = {
-                            'meccs': meccs_nev,
-                            'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
-                            'esely': legjobb_ketesely['esely'],
-                            'opcio_nev': legjobb_ketesely['nev'],
-                            'odds': legjobb_ketesely['odds'],
-                            'irodak_szama': len(hazai_oddsok),
-                            'liga': sport_title,
-                            'szoras': atlag_szoras
-                        }
-                        
-                        if is_rizikos:
-                            if meccs_nev not in rizikos_dict or legjobb_ketesely['esely'] > rizikos_dict[meccs_nev]['esely']:
-                                rizikos_dict[meccs_nev] = meccs_adat
-                        else:
-                            if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
-                                jeloltek_dict[meccs_nev] = meccs_adat
+                        if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
+                            jeloltek_dict[meccs_nev] = {
+                                'meccs': meccs_nev,
+                                'kezdes': kezdes_hu.strftime("%Y-%m-%d %H:%M"),
+                                'esely': legjobb_ketesely['esely'],
+                                'opcio_nev': legjobb_ketesely['nev'],
+                                'odds': legjobb_ketesely['odds'],
+                                'irodak_szama': len(hazai_oddsok)
+                            }
         else:
             st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
     
@@ -236,61 +193,36 @@ try:
     jeloltek.sort(key=lambda x: x['esely'], reverse=True)
     top_lista = jeloltek[:MAX_LISTA]
     
-    rizikos_lista = list(rizikos_dict.values())
-    rizikos_lista.sort(key=lambda x: x['esely'], reverse=True)
-    
-    if not top_lista and not rizikos_lista:
+    if not top_lista:
         st.warning(f"📭 Nincs olyan jövőbeli foci meccs (72 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_MIN*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
     else:
-        if top_lista:
-            st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP ⭐</div>", unsafe_allow_html=True)
-            for i, j in enumerate(top_lista[:3], 1):
-                st.markdown("<div class='top3-card'>", unsafe_allow_html=True)
-                cim = f"⭐ | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
-                with st.expander(cim, expanded=True):
-                    st.markdown(f"<div style='font-size: 1em; color: #FFD700; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
-                    st.markdown(f"**Liga:** {j['liga']}")
-                    st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
-                    st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
-                    tet = javasolt_tet(j['esely'])
-                    varhato_nyeremeny = tet * j['odds']
-                    netto = varhato_nyeremeny - tet
-                    st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda | Szórás: {j['szoras']:.3f}</div>", unsafe_allow_html=True)
-                    st.markdown("---")
-                    st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
-                st.markdown("</div>", unsafe_allow_html=True)
-            
-            if len(top_lista) > 3:
-                st.markdown("<div class='other-header'>További biztonságos meccsek</div>", unsafe_allow_html=True)
-                for i, j in enumerate(top_lista[3:], 4):
-                    st.markdown("<div class='other-card'>", unsafe_allow_html=True)
-                    cim = f"🟡 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
-                    with st.expander(cim, expanded=False):
-                        st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
-                        st.markdown(f"**Liga:** {j['liga']}")
-                        st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
-                        st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
-                        tet = javasolt_tet(j['esely'])
-                        varhato_nyeremeny = tet * j['odds']
-                        netto = varhato_nyeremeny - tet
-                        st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
-                        st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
-                        st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda | Szórás: {j['szoras']:.3f}</div>", unsafe_allow_html=True)
-                        st.markdown("---")
-                        st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
-                    st.markdown("</div>", unsafe_allow_html=True)
+        # TOP 3
+        st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP ⭐</div>", unsafe_allow_html=True)
+        for i, j in enumerate(top_lista[:3], 1):
+            st.markdown("<div class='top3-card'>", unsafe_allow_html=True)
+            cim = f"⭐ | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
+            with st.expander(cim, expanded=True):
+                st.markdown(f"<div style='font-size: 1em; color: #FFD700; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
+                st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
+                tet = javasolt_tet(j['esely'])
+                varhato_nyeremeny = tet * j['odds']
+                netto = varhato_nyeremeny - tet
+                st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda</div>", unsafe_allow_html=True)
+                st.markdown("---")
+                st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
+            st.markdown("</div>", unsafe_allow_html=True)
         
-        if rizikos_lista:
-            st.markdown("<div class='risk-header'>⚠️ Rizikós ligák (fokozott óvatosság)</div>", unsafe_allow_html=True)
-            for j in rizikos_lista:
-                st.markdown("<div class='risk-card'>", unsafe_allow_html=True)
-                cim = f"🟠 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
+        # További meccsek
+        if len(top_lista) > 3:
+            st.markdown("<div class='other-header'>További biztonságos meccsek</div>", unsafe_allow_html=True)
+            for i, j in enumerate(top_lista[3:], 4):
+                st.markdown("<div class='other-card'>", unsafe_allow_html=True)
+                cim = f"🟡 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
                 with st.expander(cim, expanded=False):
-                    st.markdown(f"<div class='risk-warning'>⚠️ FIGYELEM: Ez a meccs rizikós ligából van ({j['liga']}). Csak saját felelősségre fogadj!</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='font-size: 1em; color: #FF8C00; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
-                    st.markdown(f"**Liga:** {j['liga']}")
+                    st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                     st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
                     st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
                     tet = javasolt_tet(j['esely'])
@@ -298,11 +230,12 @@ try:
                     netto = varhato_nyeremeny - tet
                     st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
                     st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda | Szórás: {j['szoras']:.3f}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda</div>", unsafe_allow_html=True)
                     st.markdown("---")
                     st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
                 st.markdown("</div>", unsafe_allow_html=True)
         
+        # Kombináció
         if len(top_lista) >= 2:
             kombi_meccsek = top_lista[:3]
             kombi_odds = 1.0
