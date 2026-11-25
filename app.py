@@ -18,6 +18,9 @@ h1 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 800; font
 .other-header { color: #A0AAB5; font-size: 1.5em; font-weight: 700; text-align: center; margin-top: 30px; margin-bottom: 20px; }
 .other-card .streamlit-expanderHeader { background-color: #1E252B !important; border-radius: 8px !important; color: #A0AAB5 !important; font-weight: 600 !important; font-size: 1.1em !important; border: 1px solid #444 !important; padding: 12px 15px !important; margin-bottom: 5px; }
 .other-card .streamlit-expanderContent { background-color: #161A1F !important; border: 1px solid #444 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 15px !important; }
+.watch-header { color: #FACC15; font-size: 1.6em; font-weight: 700; text-align: center; margin-top: 30px; margin-bottom: 20px; }
+.watch-card .streamlit-expanderHeader { background-color: #2B2A10 !important; border-radius: 8px !important; color: #FACC15 !important; font-weight: 600 !important; font-size: 1.1em !important; border: 1px solid #FACC15 !important; padding: 12px 15px !important; margin-bottom: 5px; }
+.watch-card .streamlit-expanderContent { background-color: #1A1A0A !important; border: 1px solid #FACC15 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 15px !important; }
 .risk-header { color: #FF8C00; font-size: 1.8em; font-weight: 900; text-align: center; margin-top: 30px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 140, 0, 0.5); }
 .risk-card .streamlit-expanderHeader { background-color: #3D2400 !important; border-radius: 8px !important; color: #FF8C00 !important; font-weight: 700 !important; font-size: 1.2em !important; border: 2px solid #FF8C00 !important; padding: 15px 20px !important; margin-bottom: 8px; }
 .risk-card .streamlit-expanderContent { background-color: #2A1900 !important; border: 2px solid #FF8C00 !important; border-top: none !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; padding: 20px !important; }
@@ -34,10 +37,11 @@ h1 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 800; font
 .kombi-percent { color: #22C55E; font-weight: bold; }
 .kombi-odds { color: #22C55E; font-size: 1.5em; font-weight: bold; text-align: center; margin-top: 15px; text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
 .median-info { background-color: #1E252B; border-left: 3px solid #FACC15; padding: 8px; margin-top: 10px; border-radius: 4px; font-size: 0.85em; color: #A0AAB5; }
+.tippmix-warn { color: #FF8C00; font-size: 0.85em; margin-top: 8px; font-style: italic; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>⚽ Napi Foci Tipp (72 óra)</h1>", unsafe_allow_html=True)
+st.markdown("<h1>⚽ Napi Foci Tipp (120 óra)</h1>", unsafe_allow_html=True)
 
 # ==========================================
 # ÉLŐ ÓRA
@@ -56,7 +60,8 @@ ora_frissites()
 
 st.markdown("""
 <div class="warning-box">
-⚠️ <b>FIGYELEM!</b> Az app a következő 72 óra legbiztonságosabb tippjeit mutatja (<b>82% feletti esély</b>, Kétesély). 
+⚠️ <b>FIGYELEM!</b> Az app a következő <b>120 óra</b> legbiztonságosabb tippjeit mutatja.
+A <b style="color: #FFD700;">TOP 3</b> a 82% feletti, a <b style="color: #FACC15;">Figyelőlista</b> a 75-82% közötti esélyű meccseket tartalmazza (Kétesély). 
 Az oddsok <b>medián</b> alapján számolódnak (több fogadóiroda).
 A <span style="color: #FF8C00; font-weight: bold;">narancs</span> színű meccsek rizikós ligákból vannak - fokozott óvatosság!
 A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tudsz veszíteni!
@@ -66,16 +71,23 @@ A sportfogadás kockázattal jár, soha ne tegyél fel többet, mint amit el tud
 # ==========================================
 # BEÁLLÍTÁSOK
 # ==========================================
-ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"
-KUSZOB_MIN = 0.82  # BIZTONSÁGOS KÜSZÖB: 82%
-MIN_IRODAK = 2     # Minimum 2 fogadóiroda kell
+# Biztonságos kulcskezelés: Streamlit Secrets, fallback a régi kulcsra
+try:
+    ODDS_API_KEY = st.secrets["ODDS_API_KEY"]
+except (KeyError, FileNotFoundError):
+    ODDS_API_KEY = "985c99f23fcd23aa4acce2ef5d3a99ba"  # ← ÉLESBEN CSERÉLD KI / TÖRÖLD!
+
+KUSZOB_MIN = 0.82          # TOP lista küszöbe
+KUSZOB_FIGYELO = 0.75      # Figyelőlista küszöbe
+MIN_IRODAK = 2             # Minimum 2 fogadóiroda kell
 MAX_LISTA = 10
 
 # RIZIKÓS LIGÁK (kulcsszavak)
 RIZIKOS_KULCSSZAVAK = [
     'friendly', 'baratsagos', 'amateur', 'youth', 'u19', 'u21', 'u17',
     'women', 'reserve', 'b team', 'b csapat', 'cup qualification', 'kupa selejtezo',
-    'pre-season', 'felkeszules'
+    'pre-season', 'felkeszules', 'brasileirao', 'copa libertadores', 'mls',
+    'segunda', 'serie b', '2. bundesliga', 'championship'
 ]
 
 if st.button("🔄 Adatok frissítése"):
@@ -87,10 +99,10 @@ def javasolt_tet(esely):
     elif esely >= 0.90: return 500
     elif esely >= 0.85: return 300
     elif esely >= 0.82: return 200
+    elif esely >= 0.75: return 150
     else: return 100
 
 def rizikos_liga_e(sport_title):
-    """Ellenőrzi, hogy a liga rizikós-e"""
     sport_title_lower = sport_title.lower()
     for kulcsszo in RIZIKOS_KULCSSZAVAK:
         if kulcsszo in sport_title_lower:
@@ -105,14 +117,18 @@ try:
     hu_tz = pytz.timezone('Europe/Budapest')
     
     kezdo_datum = most_utc.strftime("%Y-%m-%dT00:00:00Z")
-    veg_datum = (most_utc + timedelta(days=2)).strftime("%Y-%m-%dT23:59:59Z")
+    veg_datum = (most_utc + timedelta(days=4)).strftime("%Y-%m-%dT23:59:59Z")  # 5 nap
     
-    url = f"https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey={ODDS_API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal&commenceTimeFrom={kezdo_datum}&commenceTimeTo={veg_datum}"
+    url = (f"https://api.the-odds-api.com/v4/sports/soccer/odds/"
+           f"?apiKey={ODDS_API_KEY}&regions=eu,uk,us&markets=h2h"
+           f"&oddsFormat=decimal"
+           f"&commenceTimeFrom={kezdo_datum}&commenceTimeTo={veg_datum}")
     
     jeloltek_dict = {}
+    figyelolista_dict = {}
     rizikos_dict = {}
     
-    with st.spinner("Biztonságos foci meccsek keresése (72 óra)..."):
+    with st.spinner("Biztonságos foci meccsek keresése (120 óra)..."):
         valasz = requests.get(url)
         
         if valasz.status_code == 200:
@@ -134,7 +150,6 @@ try:
                 sport_title = m.get('sport_title', '')
                 is_rizikos = rizikos_liga_e(sport_title)
                 
-                # Medián alapú odds gyűjtés
                 hazai_oddsok = []
                 vendeg_oddsok = []
                 dontetlen_oddsok = []
@@ -150,16 +165,13 @@ try:
                                 elif k['name'] == "Draw":
                                     dontetlen_oddsok.append(k['price'])
                 
-                # Minimum irodaszám ellenőrzés
                 if len(hazai_oddsok) < MIN_IRODAK or len(vendeg_oddsok) < MIN_IRODAK or len(dontetlen_oddsok) < MIN_IRODAK:
                     continue
                 
-                # Medián számítás
                 median_hazai = statistics.median(hazai_oddsok)
                 median_vendeg = statistics.median(vendeg_oddsok)
                 median_dontetlen = statistics.median(dontetlen_oddsok)
                 
-                # Esély számítás (margin kiszűrése)
                 nyers_osszeg = (1/median_hazai) + (1/median_vendeg) + (1/median_dontetlen)
                 
                 if nyers_osszeg > 0:
@@ -176,7 +188,7 @@ try:
                     
                     legjobb_ketesely = None
                     for opcio in ketesely_opciok:
-                        if opcio['esely'] >= KUSZOB_MIN:
+                        if opcio['esely'] >= KUSZOB_FIGYELO:  # Itt már a legalacsonyabb küszöböt nézzük
                             if legjobb_ketesely is None or opcio['esely'] > legjobb_ketesely['esely']:
                                 legjobb_ketesely = opcio
                     
@@ -192,13 +204,16 @@ try:
                             'liga': sport_title
                         }
                         
-                        # Rizikós vagy biztonságos kategóriába kerüljön?
                         if is_rizikos:
                             if meccs_nev not in rizikos_dict or legjobb_ketesely['esely'] > rizikos_dict[meccs_nev]['esely']:
                                 rizikos_dict[meccs_nev] = meccs_adat
-                        else:
+                        elif legjobb_ketesely['esely'] >= KUSZOB_MIN:
                             if meccs_nev not in jeloltek_dict or legjobb_ketesely['esely'] > jeloltek_dict[meccs_nev]['esely']:
                                 jeloltek_dict[meccs_nev] = meccs_adat
+                        else:
+                            # 75-82% közötti meccsek a figyelőlistára
+                            if meccs_nev not in figyelolista_dict or legjobb_ketesely['esely'] > figyelolista_dict[meccs_nev]['esely']:
+                                figyelolista_dict[meccs_nev] = meccs_adat
         else:
             st.error(f"Hiba az API-val: {valasz.status_code} - {valasz.text}")
     
@@ -209,15 +224,19 @@ try:
     jeloltek.sort(key=lambda x: x['esely'], reverse=True)
     top_lista = jeloltek[:MAX_LISTA]
     
+    figyelo_lista = list(figyelolista_dict.values())
+    figyelo_lista.sort(key=lambda x: x['esely'], reverse=True)
+    figyelo_lista = figyelo_lista[:MAX_LISTA]
+    
     rizikos_lista = list(rizikos_dict.values())
     rizikos_lista.sort(key=lambda x: x['esely'], reverse=True)
     
-    if not top_lista and not rizikos_lista:
-        st.warning(f"📭 Nincs olyan jövőbeli foci meccs (72 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_MIN*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
+    if not top_lista and not figyelo_lista and not rizikos_lista:
+        st.warning(f"📭 Nincs olyan jövőbeli foci meccs (120 órán belül), ahol a Kétesély opció esélye elérné a {int(KUSZOB_FIGYELO*100)}%-ot. Az app azt javasolja: ma ne fogadj.")
     else:
-        # --- BIZTONSÁGOS MECCSEK ---
+        # --- BIZTONSÁGOS MECCSEK (TOP 3) ---
         if top_lista:
-            st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP ⭐</div>", unsafe_allow_html=True)
+            st.markdown("<div class='top3-header'>⭐ TOP 3 LEGJOBB TIPP (82% felett) ⭐</div>", unsafe_allow_html=True)
             for i, j in enumerate(top_lista[:3], 1):
                 st.markdown("<div class='top3-card'>", unsafe_allow_html=True)
                 cim = f"⭐ | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
@@ -232,13 +251,13 @@ try:
                     st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
                     st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
                     st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda mediánja alapján</div>", unsafe_allow_html=True)
+                    st.markdown("<div class='tippmix-warn'>⚠️ Figyelem: Ez a Kétesély opció nem biztos, hogy elérhető a Tippmix Pro-n!</div>", unsafe_allow_html=True)
                     st.markdown("---")
                     st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
                 st.markdown("</div>", unsafe_allow_html=True)
             
-            # További biztonságos meccsek
             if len(top_lista) > 3:
-                st.markdown("<div class='other-header'>További biztonságos meccsek</div>", unsafe_allow_html=True)
+                st.markdown("<div class='other-header'>További biztonságos meccsek (82% felett)</div>", unsafe_allow_html=True)
                 for i, j in enumerate(top_lista[3:], 4):
                     st.markdown("<div class='other-card'>", unsafe_allow_html=True)
                     cim = f"🟡 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
@@ -253,14 +272,36 @@ try:
                         st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
                         st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
                         st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda mediánja alapján</div>", unsafe_allow_html=True)
+                        st.markdown("<div class='tippmix-warn'>⚠️ Figyelem: Ez a Kétesély opció nem biztos, hogy elérhető a Tippmix Pro-n!</div>", unsafe_allow_html=True)
                         st.markdown("---")
                         st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
                     st.markdown("</div>", unsafe_allow_html=True)
         
-        # --- RIZIKÓS MECCSEK (NARANCSSÁRGA) ---
+        # --- FIGYELŐLISTA (75-82%) ---
+        if figyelo_lista:
+            st.markdown("<div class='watch-header'>🟡 Figyelőlista (75-82% között)</div>", unsafe_allow_html=True)
+            for j in figyelo_lista:
+                st.markdown("<div class='watch-card'>", unsafe_allow_html=True)
+                cim = f"🟡 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
+                with st.expander(cim, expanded=False):
+                    st.markdown(f"<div style='font-size: 1em; color: #FACC15; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
+                    st.markdown(f"**Liga:** {j['liga']}")
+                    st.markdown(f"**Javasolt tipp:** {j['opcio_nev']}")
+                    st.markdown(f"**Esély:** {j['esely']*100:.1f}% | **Odds:** {j['odds']:.2f}")
+                    tet = javasolt_tet(j['esely'])
+                    varhato_nyeremeny = tet * j['odds']
+                    netto = varhato_nyeremeny - tet
+                    st.markdown(f"<div class='suggested-bet'>💰 Javasolt tét: {tet} Ft</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color: #22C55E; font-weight: bold; font-size: 1.1em;'>📈 Várható nyeremény: {varhato_nyeremeny:.0f} Ft (Nettó: +{netto:.0f} Ft)</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='median-info'>🔒 Biztonság: {j['irodak_szama']} fogadóiroda mediánja alapján</div>", unsafe_allow_html=True)
+                    st.markdown("<div class='tippmix-warn'>⚠️ Figyelem: Ez a Kétesély opció nem biztos, hogy elérhető a Tippmix Pro-n!</div>", unsafe_allow_html=True)
+                    st.markdown("---")
+                    st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
+                st.markdown("</div>", unsafe_allow_html=True)
+        
+        # --- RIZIKÓS MECCSEK ---
         if rizikos_lista:
             st.markdown("<div class='risk-header'>⚠️ RIZIKÓS LIGÁK (fokozott óvatosság)</div>", unsafe_allow_html=True)
-            
             for j in rizikos_lista:
                 st.markdown("<div class='risk-card'>", unsafe_allow_html=True)
                 cim = f"🟠 | {j['meccs']}  —  {j['opcio_nev']} ({j['esely']*100:.1f}%)"
@@ -280,9 +321,9 @@ try:
                     st.markdown("[🔍 Ugrás a Tippmix oldalára](https://www.tippmix.hu/mobil/elo)")
                 st.markdown("</div>", unsafe_allow_html=True)
         
-        # --- KOMBINÁCIÓ (csak biztonságos meccsekből) ---
+        # --- KOMBINÁCIÓ (csak a legjobb 2 meccsből) ---
         if len(top_lista) >= 2:
-            kombi_meccsek = top_lista[:3]
+            kombi_meccsek = top_lista[:2]  # Csak 2 meccs a biztonság érdekében
             kombi_odds = 1.0
             kombi_esely = 1.0
             kombi_html_elemek = ""
