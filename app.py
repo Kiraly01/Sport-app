@@ -38,7 +38,6 @@ h1 { color: #FFFFFF; font-family: 'Segoe UI', sans-serif; font-weight: 800; font
 .kombi-odds { color: #22C55E; font-size: 1.5em; font-weight: bold; text-align: center; margin-top: 15px; text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
 .median-info { background-color: #1E252B; border-left: 3px solid #FACC15; padding: 8px; margin-top: 10px; border-radius: 4px; font-size: 0.85em; color: #A0AAB5; }
 .tippmix-warn { color: #FF8C00; font-size: 0.85em; margin-top: 8px; font-style: italic; }
-/* ÚJ: Kieséses meccs figyelmeztetés stílusa */
 .kieseses-warn { background-color: #4A1C00; border-left: 4px solid #FF4500; padding: 10px; margin-top: 8px; border-radius: 4px; color: #FFA500; font-size: 0.9em; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
@@ -91,7 +90,6 @@ RIZIKOS_KULCSSZAVAK = [
     'segunda', 'serie b', '2. bundesliga', 'championship'
 ]
 
-# ÚJ: KIESÉSES / KUPA MÉRKŐZÉSEK KULCSSZAVAI
 KUPAS_KULCSSZAVAK = [
     'cup', 'copa', 'kupa', 'trophy', 'playoff', 'play-off', 'play off',
     'clausura', 'apertura', 'final', 'döntő', 'qualification', 'selejtezo',
@@ -102,7 +100,6 @@ KUPAS_KULCSSZAVAK = [
 ]
 
 def kieseses_meccs_e(sport_title):
-    """ÚJ: Ellenőrzi, hogy a liga kieséses/kupa jellegű-e"""
     sport_title_lower = sport_title.lower()
     for kulcsszo in KUPAS_KULCSSZAVAK:
         if kulcsszo in sport_title_lower:
@@ -221,7 +218,7 @@ try:
                             'odds': legjobb_ketesely['odds'],
                             'irodak_szama': len(hazai_oddsok),
                             'liga': sport_title,
-                            'kieseses': kieseses_meccs_e(sport_title)  # ÚJ
+                            'kieseses': kieseses_meccs_e(sport_title)
                         }
                         
                         if is_rizikos:
@@ -263,7 +260,6 @@ try:
                     st.markdown(f"<div style='font-size: 1em; color: #FFD700; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                     st.markdown(f"**Liga:** {j['liga']}")
                     
-                    # ÚJ: Kieséses figyelmeztetés
                     if j.get('kieseses', False):
                         st.markdown("<div class='kieseses-warn'>⚠️ KIESÉSES MÉRKŐZÉS! A döntetlen utáni hosszabbítás/továbbjutás befolyásolhatja a kimenetelt. Fogadj óvatosan!</div>", unsafe_allow_html=True)
                     
@@ -289,7 +285,6 @@ try:
                         st.markdown(f"<div style='font-size: 1em; color: #A0AAB5; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                         st.markdown(f"**Liga:** {j['liga']}")
                         
-                        # ÚJ: Kieséses figyelmeztetés
                         if j.get('kieseses', False):
                             st.markdown("<div class='kieseses-warn'>⚠️ KIESÉSES MÉRKŐZÉS! A döntetlen utáni hosszabbítás/továbbjutás befolyásolhatja a kimenetelt. Fogadj óvatosan!</div>", unsafe_allow_html=True)
                         
@@ -316,7 +311,6 @@ try:
                     st.markdown(f"<div style='font-size: 1em; color: #FACC15; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                     st.markdown(f"**Liga:** {j['liga']}")
                     
-                    # ÚJ: Kieséses figyelmeztetés
                     if j.get('kieseses', False):
                         st.markdown("<div class='kieseses-warn'>⚠️ KIESÉSES MÉRKŐZÉS! A döntetlen utáni hosszabbítás/továbbjutás befolyásolhatja a kimenetelt. Fogadj óvatosan!</div>", unsafe_allow_html=True)
                     
@@ -344,7 +338,6 @@ try:
                     st.markdown(f"<div style='font-size: 1em; color: #FF8C00; margin-bottom: 15px;'>📅 Kezdés: <b>{j['kezdes']}</b></div>", unsafe_allow_html=True)
                     st.markdown(f"**Liga:** {j['liga']}")
                     
-                    # ÚJ: Kieséses figyelmeztetés
                     if j.get('kieseses', False):
                         st.markdown("<div class='kieseses-warn'>⚠️ KIESÉSES MÉRKŐZÉS! A döntetlen utáni hosszabbítás/továbbjutás befolyásolhatja a kimenetelt. Fogadj óvatosan!</div>", unsafe_allow_html=True)
                     
@@ -384,4 +377,4 @@ try:
                     💰 Javasolt tét: {kombi_tet} Ft
                 </div>
                 <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.1em; margin-top: 5px;">
-                    📈 Várható nyeremény: {kombi_nyeremeny:.0f} Ft
+                    📈 Várható nyerem
