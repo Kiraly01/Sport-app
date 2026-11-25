@@ -377,4 +377,10 @@ try:
                     💰 Javasolt tét: {kombi_tet} Ft
                 </div>
                 <div style="text-align: center; color: #22C55E; font-weight: bold; font-size: 1.1em; margin-top: 5px;">
-                    📈 Várható nyerem
+                    📈 Várható nyeremény: {kombi_nyeremeny:.0f} Ft (Nettó: +{kombi_nyeremeny - kombi_tet:.0f} Ft)
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+except Exception as e:
+    st.error("Váratlan hiba történt: " + str(e))
