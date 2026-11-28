@@ -17,10 +17,10 @@ st.caption("Poisson + piaci odds kombináció. Csak akkor tippel, ha mindkét mo
 # ============================================================
 # KONFIG
 # ============================================================
-TOP_KUSZOB      = 0.85
-FIGYELO_KUSZOB  = 0.78
+TOP_KUSZOB      = 0.82
+FIGYELO_KUSZOB  = 0.75
 MIN_IRODAK      = 3
-MIN_ODDS        = 1.15
+MIN_ODDS        = 1.08
 MAX_ODDS        = 1.40
 MAX_ODDS_SPREAD = 0.50
 MAX_FAVORIT     = 2.20
