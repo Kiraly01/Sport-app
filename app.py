@@ -8,11 +8,109 @@ from collections import defaultdict
 import time
 
 # ============================================================
-# OLDAL
+# OLDAL ÉS MODERN DIZÁJN (CSS)
 # ============================================================
 st.set_page_config(page_title="⚽ Napi Foci Tipp – Modell", page_icon="⚽", layout="wide")
-st.title("⚽ Napi Foci Tipp – Modellalapú")
-st.caption("Poisson + piaci odds kombináció. Csak akkor tippel, ha mindkét modell egyetért.")
+
+st.markdown("""
+<style>
+/* Alap háttér és betűtípus */
+.stApp {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #e2e8f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+h1, h2, h3 { color: #f8fafc; font-weight: 800; letter-spacing: 1px; }
+p, span, div { font-size: 1.05rem; }
+
+/* Modern Csempe (Card) alap stílus */
+.modern-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* TOP Tipp csempe színei (Arany/Kék) */
+.top-card {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+    border-left: 6px solid #3b82f6;
+}
+.top-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+}
+.top-card-title { font-size: 1.4rem; font-weight: 900; color: #f8fafc; }
+.top-card-percent { font-size: 1.6rem; font-weight: 900; color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.badge {
+    background: #3b82f6;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Adatok elrendezése a csempén belül */
+.data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+.data-item {
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 8px;
+}
+.data-label { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+.data-value { font-size: 1.2rem; font-weight: bold; color: #f8fafc; }
+.tip-text { color: #60a5fa; font-weight: bold; font-size: 1.1rem; margin-top: 10px; display: block;}
+
+/* Figyelőlista csempe */
+.watch-card {
+    background: rgba(30, 41, 59, 0.5);
+    border-left: 6px solid #eab308;
+}
+
+/* Figyelmeztetések */
+.warn-box {
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid #eab308;
+    color: #fef08a;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+.danger-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("<h1>⚽ Napi Foci Tipp – Prémium Modell</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color:#94a3b8; font-size:1.1rem;'>Poisson statisztika + Piaci odds kombináció. Csak a tökéletes egyezések.</p>", unsafe_allow_html=True)
 
 # ============================================================
 # KONFIG
@@ -26,37 +124,32 @@ MAX_ODDS_SPREAD = 2.00
 MAX_FAVORIT     = 2.20
 KELLY_FRAKCIO   = 0.25
 BANKROLL        = 10000
-
-# Piaci vs. statisztikai súly (összeg = 1.0)
 W_PIAC = 0.55
 W_STAT = 0.45
-
-# Poisson: hány meccsből számoljon erősséget
 POISSON_MECCS_SZAM = 30
-# minimum különbség a két modell között (kiszámíthatóság)
-MIN_EGYEZES = 0.10 # 5 százalékpont
+MIN_EGYEZES = 0.10
 
 LIGAK = [
-    "soccer_epl",
-    "soccer_spain_la_liga",
-    "soccer_italy_serie_a",
-    "soccer_germany_bundesliga",
-    "soccer_france_ligue_one",
+    "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
+    "soccer_germany_bundesliga", "soccer_france_ligue_one",
 ]
 
-# football-data.org liga kódok (ingyenes csomag)
 FD_LIGAK = {
-    "soccer_epl": "PL",
-    "soccer_spain_la_liga": "PD",
-    "soccer_italy_serie_a": "SA",
-    "soccer_germany_bundesliga": "BL1",
+    "soccer_epl": "PL", "soccer_spain_la_liga": "PD",
+    "soccer_italy_serie_a": "SA", "soccer_germany_bundesliga": "BL1",
     "soccer_france_ligue_one": "FL1",
 }
+
+# Kieséses ligák kulcsszavai
+KUPAS_KULCSSZAVAK = [
+    'cup', 'copa', 'kupa', 'trophy', 'playoff', 'play-off', 'clausura', 
+    'apertura', 'qualification', 'knockout', 'round of', 'supercopa'
+]
 
 TZ = ZoneInfo("Europe/Budapest")
 
 # ============================================================
-# KULCSOK
+# API KULCSOK
 # ============================================================
 try:
     ODDS_KEY = st.secrets["ODDS_API_KEY"]
@@ -68,444 +161,316 @@ try:
     FD_KEY = st.secrets["FOOTBALL_DATA_KEY"]
 except Exception:
     FD_KEY = None
-    st.warning("⚠️ FOOTBALL_DATA_KEY hiányzik – a Poisson-modell kimarad, csak piaci mód.")
+    st.sidebar.warning("⚠️ FOOTBALL_DATA_KEY hiányzik – csak piaci mód.")
 
 # ============================================================
-# API – ODDS
+# API LEKÉRDEZÉSEK
 # ============================================================
 @st.cache_data(ttl=900, show_spinner=False)
 def leker_liga(liga: str):
     most = datetime.now(ZoneInfo("UTC"))
     kezdo = most.strftime("%Y-%m-%dT00:00:00Z")
     veg   = (most + timedelta(days=5)).strftime("%Y-%m-%dT23:59:59Z")
-    url = (
-        f"https://api.the-odds-api.com/v4/sports/{liga}/odds/"
-        f"?apiKey={ODDS_KEY}&regions=eu,uk&markets=h2h&oddsFormat=decimal"
-        f"&commenceTimeFrom={kezdo}&commenceTimeTo={veg}"
-    )
+    url = (f"https://api.the-odds-api.com/v4/sports/{liga}/odds/"
+           f"?apiKey={ODDS_KEY}&regions=eu,uk&markets=h2h&oddsFormat=decimal"
+           f"&commenceTimeFrom={kezdo}&commenceTimeTo={veg}")
     try:
         r = requests.get(url, timeout=20)
         kvota = r.headers.get("x-requests-remaining", "?")
-        if r.status_code == 401:
-            st.warning(f"🔑 Rossz odds API kulcs ({liga})."); return [], kvota
-        if r.status_code == 429:
-            st.warning(f"⏳ Odds API kvóta túllépve ({liga})."); return [], kvota
+        if r.status_code in [401, 429]: return [], kvota
         r.raise_for_status()
         return r.json(), kvota
-    except Exception as e:
-        st.warning(f"⚠️ Odds hiba ({liga}): {e}")
+    except Exception:
         return [], "?"
-
 
 @st.cache_data(ttl=900, show_spinner=False)
 def leker_osszes_odds():
     osszes, kvota = [], "?"
     for liga in LIGAK:
         adat, kvota = leker_liga(liga)
-        if isinstance(adat, list):
-            osszes.extend(adat)
+        if isinstance(adat, list): osszes.extend(adat)
         time.sleep(0.2)
     return osszes, kvota
 
-# ============================================================
-# API – FOOTBALL-DATA (statisztika a Poisson-modellhez)
-# ============================================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def leker_csapat_meccsek(fd_liga: str):
-    """Lekéri a liga összes befejezett meccsét az idényben (max 100)."""
-    if not FD_KEY:
-        return []
+    if not FD_KEY: return []
     url = f"https://api.football-data.org/v4/competitions/{fd_liga}/matches?status=FINISHED"
     try:
         r = requests.get(url, headers={"X-Auth-Token": FD_KEY}, timeout=20)
-        if r.status_code == 403:
-            st.warning(f"🔑 Football-data kulcs jogosultság hiba ({fd_liga}).")
-            return []
-        if r.status_code == 429:
-            st.warning(f"⏳ Football-data kvóta túllépve ({fd_liga}).")
-            return []
-        r.raise_for_status()
-        return r.json().get("matches", [])
-    except Exception as e:
-        st.warning(f"⚠️ Football-data hiba ({fd_liga}): {e}")
+        if r.status_code != 200: return []
+        # JAVÍTÁS: Csak az utolsó X meccset vesszük figyelembe a Poissonhoz
+        return r.json().get("matches", [])[-POISSON_MECCS_SZAM:]
+    except Exception:
         return []
-
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def epit_erősség():
-    """
-    Minden ligára kiszámolja a csapatok támadó/védekező erősségét.
-    Visszaad: {liga_kulcs: {"team_name": (att_erő, def_erő), ...}, "liga_átlag_gól": float}
-    """
-    ero = {}
-    liga_atlag = {}
+    ero, liga_atlag = {}, {}
     for odds_kulcs, fd_kulcs in FD_LIGAK.items():
         meccsek = leker_csapat_meccsek(fd_kulcs)
-        if not meccsek:
-            continue
+        if not meccsek: continue
 
-        # Csapatonkénti gólok
-        golt_rugott = defaultdict(list)
-        golt_kapott = defaultdict(list)
-
+        golt_rugott, golt_kapott = defaultdict(list), defaultdict(list)
         for m in meccsek:
-            if m.get("status") != "FINISHED":
-                continue
+            if m.get("status") != "FINISHED": continue
             ft = m.get("score", {}).get("fullTime", {})
             hg, ag = ft.get("home"), ft.get("away")
-            if hg is None or ag is None:
-                continue
-            hazai = m["homeTeam"]["name"]
-            vendeg = m["awayTeam"]["name"]
-            golt_rugott[hazai].append(hg)
-            golt_kapott[hazai].append(ag)
-            golt_rugott[vendeg].append(ag)
-            golt_kapott[vendeg].append(hg)
+            if hg is None or ag is None: continue
+            hazai, vendeg = m["homeTeam"]["name"], m["awayTeam"]["name"]
+            golt_rugott[hazai].append(hg); golt_kapott[hazai].append(ag)
+            golt_rugott[vendeg].append(ag); golt_kapott[vendeg].append(hg)
 
-        if not golt_rugott:
-            continue
-
-        # Ligaátlag (meccsenkénti gól / 2 csapat)
+        if not golt_rugott: continue
         osszes_gol = sum(sum(v) for v in golt_rugott.values())
-        osszes_meccs = len(meccsek)
-        if osszes_meccs == 0:
-            continue
-        liga_meccs_atlag = osszes_gol / osszes_meccs  # egy meccsen összesen
-        liga_csapat_atlag = liga_meccs_atlag / 2      # egy csapatra
-
+        if len(meccsek) == 0: continue
+        
+        liga_csapat_atlag = (osszes_gol / len(meccsek)) / 2
         liga_atlag[odds_kulcs] = liga_csapat_atlag
         ero[odds_kulcs] = {}
 
         for csapat in golt_rugott:
-            rugott = golt_rugott[csapat]
-            kapott = golt_kapott[csapat]
-            if len(rugott) < 5:  # túl kevés meccs → kihagyjuk
-                continue
+            rugott, kapott = golt_rugott[csapat], golt_kapott[csapat]
+            if len(rugott) < 5: continue
             att = (sum(rugott) / len(rugott)) / liga_csapat_atlag if liga_csapat_atlag > 0 else 1.0
             deff = (sum(kapott) / len(kapott)) / liga_csapat_atlag if liga_csapat_atlag > 0 else 1.0
             ero[odds_kulcs][csapat] = (att, deff)
-
     return ero, liga_atlag
 
 # ============================================================
-# POISSON MODELL
+# MODELLEK
 # ============================================================
 def poisson_pmf(k, lam):
-    if lam <= 0:
-        return 1.0 if k == 0 else 0.0
+    if lam <= 0: return 1.0 if k == 0 else 0.0
     return math.exp(-lam) * (lam ** k) / math.factorial(k)
 
-
 def poisson_1x2(lambda_h, lambda_v, max_gol=10):
-    """Visszaad: (p_hazai, p_dontetlen, p_vendeg, p_1x, p_x2)"""
     p_h = p_d = p_v = 0.0
     for i in range(max_gol + 1):
         for j in range(max_gol + 1):
             p = poisson_pmf(i, lambda_h) * poisson_pmf(j, lambda_v)
-            if i > j:
-                p_h += p
-            elif i == j:
-                p_d += p
-            else:
-                p_v += p
+            if i > j: p_h += p
+            elif i == j: p_d += p
+            else: p_v += p
     return p_h, p_d, p_v, p_h + p_d, p_v + p_d
 
-
 def statisztikai_eselyek(meccs, ero, liga_atlag):
-    """
-    A meccshez tartozó statisztikai 1X2 és 1X/X2 valószínűségek.
-    Ha nincs elég adat → None.
-    """
     liga = meccs.get("sport_key")
-    if liga not in ero:
-        return None
-    hazai = meccs.get("home_team")
-    vendeg = meccs.get("away_team")
-    if hazai not in ero[liga] or vendeg not in ero[liga]:
-        return None
+    if liga not in ero: return None
+    hazai, vendeg = meccs.get("home_team"), meccs.get("away_team")
+    if hazai not in ero[liga] or vendeg not in ero[liga]: return None
 
     att_h, def_h = ero[liga][hazai]
     att_v, def_v = ero[liga][vendeg]
     atlag = liga_atlag.get(liga)
-    if not atlag or atlag <= 0:
-        return None
+    if not atlag or atlag <= 0: return None
 
-    # Várható gólok (hazai pálya előny ~1.15)
-    lambda_h = att_h * def_v * atlag * 1.15
-    lambda_v = att_v * def_h * atlag * 0.95
-
-    # Korlátok
-    lambda_h = max(0.2, min(lambda_h, 4.0))
-    lambda_v = max(0.2, min(lambda_v, 4.0))
-
+    lambda_h = max(0.2, min(att_h * def_v * atlag * 1.15, 4.0))
+    lambda_v = max(0.2, min(att_v * def_h * atlag * 0.95, 4.0))
     p_h, p_d, p_v, p_1x, p_x2 = poisson_1x2(lambda_h, lambda_v)
-    return {
-        "p_h": p_h, "p_d": p_d, "p_v": p_v,
-        "p_1x": p_1x, "p_x2": p_x2,
-        "lambda_h": lambda_h, "lambda_v": lambda_v,
-    }
+    return {"p_h": p_h, "p_d": p_d, "p_v": p_v, "p_1x": p_1x, "p_x2": p_x2}
 
-# ============================================================
-# PIACI MODELL (medián + margin-eltávolítás)
-# ============================================================
 def piaci_eselyek(meccs):
     hazai, vendeg, dontetlen = [], [], []
     for iroda in meccs.get("bookmakers", []):
         for market in iroda.get("markets", []):
-            if market.get("key") != "h2h":
-                continue
+            if market.get("key") != "h2h": continue
             for o in market.get("outcomes", []):
                 ar = o.get("price")
-                if not isinstance(ar, (int, float)) or ar <= 1.0:
-                    continue
+                if not isinstance(ar, (int, float)) or ar <= 1.0: continue
                 nev = o.get("name")
-                if nev == meccs.get("home_team"):
-                    hazai.append(ar)
-                elif nev == meccs.get("away_team"):
-                    vendeg.append(ar)
-                elif nev == "Draw":
-                    dontetlen.append(ar)
+                if nev == meccs.get("home_team"): hazai.append(ar)
+                elif nev == meccs.get("away_team"): vendeg.append(ar)
+                elif nev == "Draw": dontetlen.append(ar)
 
-    if (len(hazai) < MIN_IRODAK or len(vendeg) < MIN_IRODAK
-            or len(dontetlen) < MIN_IRODAK):
+    if len(hazai) < MIN_IRODAK or len(vendeg) < MIN_IRODAK or len(dontetlen) < MIN_IRODAK:
         return None, "keves_iroda"
-    if max(hazai) - min(hazai) > MAX_ODDS_SPREAD:
-        return None, "nagy_szoras"
-    if max(vendeg) - min(vendeg) > MAX_ODDS_SPREAD:
+    if max(hazai) - min(hazai) > MAX_ODDS_SPREAD or max(vendeg) - min(vendeg) > MAX_ODDS_SPREAD:
         return None, "nagy_szoras"
 
-    mh = statistics.median(hazai)
-    mv = statistics.median(vendeg)
-    md = statistics.median(dontetlen)
-    if min(mh, mv) > MAX_FAVORIT:
-        return None, "nagy_favorit"
+    mh, mv, md = statistics.median(hazai), statistics.median(vendeg), statistics.median(dontetlen)
+    if min(mh, mv) > MAX_FAVORIT: return None, "nagy_favorit"
 
     ih, iv, idd = 1/mh, 1/mv, 1/md
     osszeg = ih + iv + idd
-    if osszeg <= 0:
-        return None, "nincs_odds"
-
     return {
         "p_h": ih/osszeg, "p_v": iv/osszeg, "p_d": idd/osszeg,
         "p_1x": (ih + idd)/osszeg, "p_x2": (iv + idd)/osszeg,
-        "mh": mh, "mv": mv, "md": md,
-        "margin": osszeg - 1,
+        "mh": mh, "mv": mv, "md": md, "margin": osszeg - 1
     }, None
 
-# ============================================================
-# KOMBINÁLÁS
-# ============================================================
 def kombinalt_esely(piac, stat):
-    """Súlyozott átlag. Ha nincs stat → csak piac."""
-    if stat is None:
-        return piac, "csak_piac"
-    p_1x = W_PIAC * piac["p_1x"] + W_STAT * stat["p_1x"]
-    p_x2 = W_PIAC * piac["p_x2"] + W_STAT * stat["p_x2"]
+    if stat is None: return piac, "csak_piac"
     return {
-        "p_1x": p_1x, "p_x2": p_x2,
+        "p_1x": W_PIAC * piac["p_1x"] + W_STAT * stat["p_1x"],
+        "p_x2": W_PIAC * piac["p_x2"] + W_STAT * stat["p_x2"],
         "piac_1x": piac["p_1x"], "piac_x2": piac["p_x2"],
         "stat_1x": stat["p_1x"], "stat_x2": stat["p_x2"],
     }, "kombinált"
 
-
 def egyezik(piac_p, stat_p, kuszob=MIN_EGYEZES):
-    """A két modell legalább kuszobnyit egyezzen (mindkettő ugyanarra a tippre)."""
-    if stat_p is None:
-        return True  # ha nincs stat, elfogadjuk
-    return abs(piac_p - stat_p) <= kuszob or (piac_p > 0.5) == (stat_p > 0.5)
+    # JAVÍTÁS: Ha nincs statisztika, nem elég biztos a TOP-hoz!
+    if stat_p is None: return False
+    return abs(piac_p - stat_p) <= kuszob
 
-# ============================================================
-# KELLY
-# ============================================================
 def kelly_tet(p, odds, bankroll=BANKROLL, frakcio=KELLY_FRAKCIO):
-    if odds <= 1.0 or p <= 0 or p >= 1:
-        return 0
+    if odds <= 1.0 or p <= 0 or p >= 1: return 0
     b = odds - 1
     f = (p * b - (1 - p)) / b
     return round(bankroll * f * frakcio, 0) if f > 0 else 0
 
-# ============================================================
-# IDŐ
-# ============================================================
 def ido_format(iso_str):
     try:
         dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
         return dt.astimezone(TZ).strftime("%m.%d %H:%M")
-    except Exception:
-        return "?"
+    except Exception: return "?"
+
+def kieseses_meccs_e(sport_title):
+    sport_title_lower = sport_title.lower()
+    return any(kulcsszo in sport_title_lower for kulcsszo in KUPAS_KULCSSZAVAK)
 
 # ============================================================
-# FŐ FELDOLGOZÁS
+# FELDOLGOZÁS
 # ============================================================
 def feldolgoz(meccsek, ero, liga_atlag):
     tippek, figyelo = [], []
-    kihagyva = defaultdict(int)
-    csak_piac = 0
-    kombinált_db = 0
-
     for m in meccsek:
         piac, hiba = piaci_eselyek(m)
-        if piac is None:
-            kihagyva[hiba] += 1
-            continue
+        if piac is None: continue
 
         stat = statisztikai_eselyek(m, ero, liga_atlag)
         komb, mod = kombinalt_esely(piac, stat)
-        if mod == "csak_piac":
-            csak_piac += 1
-        else:
-            kombinált_db += 1
+        
+        is_kieseses = kieseses_meccs_e(m.get("sport_title", ""))
 
         opciok = [
-            ("1X", f"{m['home_team']} vagy döntetlen (1X)", komb["p_1x"],
-             komb.get("piac_1x"), komb.get("stat_1x")),
-            ("X2", f"{m['away_team']} vagy döntetlen (X2)", komb["p_x2"],
-             komb.get("piac_x2"), komb.get("stat_x2")),
+            ("1X", f"{m['home_team']} vagy döntetlen (1X)", komb["p_1x"], komb.get("piac_1x"), komb.get("stat_1x")),
+            ("X2", f"{m['away_team']} vagy döntetlen (X2)", komb["p_x2"], komb.get("piac_x2"), komb.get("stat_x2")),
         ]
 
         legjobb = None
         for kod, nev, p, p_piac, p_stat in opciok:
             odds = 1 / p if p > 0 else 999
-            if not (MIN_ODDS <= odds <= MAX_ODDS):
-                continue
-            # kiszámíthatóság: a két modell egyezzen
-            if not egyezik(p_piac, p_stat):
-                kihagyva["modellek_nem_egyeznek"] += 1
-                continue
-            if legjobb is None or p > legjobb["esely"]:
-                legjobb = {
-                    "kod": kod, "tip": nev, "esely": p, "odds": odds,
-                    "p_piac": p_piac, "p_stat": p_stat,
-                    "ev": (p * odds - 1) * 100,
-                    "mod": mod,
-                }
+            if not (MIN_ODDS <= odds <= MAX_ODDS): continue
+            if not egyezik(p_piac, p_stat): continue # Szigorú egyezés
 
-        if legjobb is None:
-            continue
+            if legjobb is None or p > legjobb["esely"]:
+                legjobb = {"kod": kod, "tip": nev, "esely": p, "odds": odds,
+                           "p_piac": p_piac, "p_stat": p_stat, "ev": (p * odds - 1) * 100, "mod": mod}
+
+        if legjobb is None: continue
 
         adat = {
-            "meccs": f"{m['home_team']} - {m['away_team']}",
-            "liga": m.get("sport_title", m.get("sport_key", "?")),
-            "ido": ido_format(m.get("commence_time", "")),
-            "margin": piac["margin"],
-            "kelly": kelly_tet(legjobb["esely"], legjobb["odds"]),
-            **legjobb,
+            "meccs": f"{m['home_team']} - {m['away_team']}", "liga": m.get("sport_title", m.get("sport_key", "?")),
+            "ido": ido_format(m.get("commence_time", "")), "margin": piac["margin"],
+            "kelly": kelly_tet(legjobb["esely"], legjobb["odds"]), "kieseses": is_kieseses, **legjobb,
         }
 
-        if legjobb["esely"] >= TOP_KUSZOB:
+        # JAVÍTÁS: Kieséses meccsek CSAK a figyelőlistára kerülhetnek!
+        if legjobb["esely"] >= TOP_KUSZOB and not is_kieseses:
             tippek.append(adat)
         elif legjobb["esely"] >= FIGYELO_KUSZOB:
             figyelo.append(adat)
 
     tippek.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
     figyelo.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
-    return tippek, figyelo, kihagyva, csak_piac, kombinált_db
+    return tippek, figyelo
 
 # ============================================================
-# SIDEBAR
+# FUTTATÁS
 # ============================================================
-with st.sidebar:
-    st.header("⚙️ Modell")
-    st.write(f"**Piaci súly:** {W_PIAC}")
-    st.write(f"**Statisztikai súly:** {W_STAT}")
-    st.write(f"**Min. egyezés:** {MIN_EGYEZES*100:.0f}%pont")
-    st.write(f"**Poisson meccsek:** {POISSON_MECCS_SZAM}")
-    st.divider()
-    st.write(f"**Top:** {TOP_KUSZOB*100:.0f}%")
-    st.write(f"**Figyelő:** {FIGYELO_KUSZOB*100:.0f}%")
-    st.write(f"**Odds:** {MIN_ODDS}–{MAX_ODDS}")
-    st.write(f"**Bankroll:** {BANKROLL:,} Ft")
-    st.divider()
-    if FD_KEY:
-        st.success("✅ Poisson-modell aktív")
-    else:
-        st.warning("⚠️ Csak piaci mód (nincs FOOTBALL_DATA_KEY)")
-
-# ============================================================
-# FRISSÍTÉS
-# ============================================================
-c1, c2 = st.columns([1, 3])
+c1, c2 = st.columns([1, 4])
 with c1:
-    if st.button("🔄 Frissítés", use_container_width=True):
+    if st.button("🔄 Adatok frissítése", use_container_width=True, type="primary"):
         st.cache_data.clear()
         st.rerun()
 
-# ============================================================
-# BETÖLTÉS
-# ============================================================
-with st.spinner("Odds betöltése..."):
+with st.spinner("Odds és statisztikák betöltése..."):
     meccsek, kvota = leker_osszes_odds()
-
-with st.spinner("Statisztikai erősség számítása..."):
     ero, liga_atlag = epit_erősség() if FD_KEY else ({}, {})
-
-with c2:
-    st.caption(
-        f"📡 Odds kvóta: **{kvota}** | "
-        f"Meccsek: **{len(meccsek)}** | "
-        f"Ligák erősség: **{len(ero)}**"
-    )
 
 if not meccsek:
     st.error("❌ Nincs meccs. Ellenőrizd az API kulcsot / kvótát.")
     st.stop()
 
-# ============================================================
-# FELDOLGOZÁS
-# ============================================================
-tippek, figyelo, kihagyva, csak_piac, komb_db = feldolgoz(meccsek, ero, liga_atlag)
+with c2:
+    st.markdown(f"<div style='color:#94a3b8; padding-top:10px;'>📡 API Kvóta: <b>{kvota}</b> | Meccsek: <b>{len(meccsek)}</b> | Ligák: <b>{len(ero)}</b></div>", unsafe_allow_html=True)
+
+tippek, figyelo = feldolgoz(meccsek, ero, liga_atlag)
 
 # ============================================================
-# STATISZTIKA
+# MEGJELENÍTÉS - TOP TIPPEK
 # ============================================================
-with st.expander("📊 Feldolgozási statisztika", expanded=False):
-    a, b, c, d = st.columns(4)
-    a.metric("✅ Tipp", len(tippek))
-    b.metric("🟡 Figyelő", len(figyelo))
-    c.metric("🔀 Kombinált", komb_db)
-    d.metric("📈 Csak piac", csak_piac)
-    if kihagyva:
-        st.write("**Kihagyási okok:**")
-        for k, v in kihagyva.items():
-            st.write(f"• {k}: {v}")
+st.markdown("<h2 style='margin-top: 30px;'>⭐ Prémium Tippek</h2>", unsafe_allow_html=True)
 
-# ============================================================
-# TOP TIPPEK
-# ============================================================
-st.subheader("⭐ TOP TIPPEK")
 if not tippek:
-    st.warning("Nincs megfelelő meccs.")
+    st.markdown("<div class='warn-box'>Nincs olyan meccs, ami elérte volna a 82%-os biztonsági küszöböt és a modellek is egyetértenek. A mai napon ne fogadj!</div>", unsafe_allow_html=True)
 else:
-    for t in tippek[:15]:
-        cim = f"{t['meccs']} | {t['ido']} | {t['esely']*100:.1f}% | odds {t['odds']:.2f} | {t['mod']}"
-        with st.expander(cim):
-            x, y, z = st.columns(3)
-            x.metric("Kombinált esély", f"{t['esely']*100:.1f}%")
-            y.metric("Odds", f"{t['odds']:.2f}")
-            z.metric("EV", f"{t['ev']:+.1f}%")
-            st.write("**Tipp:**", t["tip"])
-            st.write("**Liga:**", t["liga"])
-            st.write("**Kezdés:**", t["ido"])
-            st.write("**Margin:**", f"{t['margin']*100:.1f}%")
-            if t["p_piac"] is not None:
-                st.write(f"**Piaci esély:** {t['p_piac']*100:.1f}%")
-            if t["p_stat"] is not None:
-                st.write(f"**Statisztikai esély (Poisson):** {t['p_stat']*100:.1f}%")
-            if t["kelly"] > 0:
-                st.success(f"💰 Javasolt tét (¼ Kelly): **{t['kelly']:,.0f} Ft**")
-            else:
-                st.info("💰 Kelly szerint nincs él.")
+    for t in tippek[:10]:
+        # Itt építjük fel a modern csempét HTML-ben
+        kies_warn = "<div class='danger-box'>⚠️ KIESÉSES MECCS - Csak óvatosan!</div>" if t['kieseses'] else ""
+        stat_val = f"{t['p_stat']*100:.1f}%" if t['p_stat'] else "Nincs adat"
+        
+        html_card = f"""
+        <div class="modern-card top-card">
+            <div class="top-card-header">
+                <div>
+                    <div class="top-card-title">{t['meccs']}</div>
+                    <div style="color: #94a3b8; font-size: 0.9rem; margin-top: 5px;">📅 {t['ido']} | 🏆 {t['liga']}</div>
+                </div>
+                <div class="top-card-percent">{t['esely']*100:.1f}%</div>
+            </div>
+            <span class="tip-text">👉 Tipp: {t['tip']}</span>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">Odds</div>
+                    <div class="data-value">{t['odds']:.2f}</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Várható Érték (EV)</div>
+                    <div class="data-value" style="color: #10b981;">{t['ev']:+.1f}%</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Piaci Esély</div>
+                    <div class="data-value">{t['p_piac']*100:.1f}%</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Statisztikai (Poisson)</div>
+                    <div class="data-value">{stat_val}</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span class="badge">{t['mod']}</span>
+                <span style="font-size: 1.2rem; color: #10b981; font-weight: bold;">💰 Tét: {t['kelly']:,.0f} Ft</span>
+            </div>
+            {kies_warn}
+        </div>
+        """
+        st.markdown(html_card, unsafe_allow_html=True)
 
 # ============================================================
-# FIGYELŐLISTA
+# MEGJELENÍTÉS - FIGYELŐLISTA
 # ============================================================
 if figyelo:
-    st.subheader("🟡 Figyelőlista")
+    st.markdown("<h2 style='margin-top: 40px;'>🟡 Figyelőlista</h2>", unsafe_allow_html=True)
     for t in figyelo[:10]:
-        st.write(
-            f"• **{t['meccs']}** ({t['ido']}) | {t['esely']*100:.1f}% | "
-            f"odds {t['odds']:.2f} | EV {t['ev']:+.1f}%"
-        )
+        kies_warn = "<div class='danger-box' style='padding: 5px; margin-top: 5px;'>⚠️ KIESÉSES MECCS</div>" if t['kieseses'] else ""
+        html_card = f"""
+        <div class="modern-card watch-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 1.1rem; font-weight: bold; color: #f8fafc;">{t['meccs']}</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">📅 {t['ido']} | {t['tip']}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.3rem; font-weight: bold; color: #eab308;">{t['esely']*100:.1f}%</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Odds: {t['odds']:.2f}</div>
+                </div>
+            </div>
+            {kies_warn}
+        </div>
+        """
+        st.markdown(html_card, unsafe_allow_html=True)
 
 # ============================================================
 # KOMBI
@@ -516,17 +481,31 @@ if len(tippek) >= 2:
     for m in kombi:
         ko *= m["odds"]
         ke *= m["esely"]
-    st.subheader("🔥 Napi Kombi")
+    
+    st.markdown("<h2 style='margin-top: 40px;'>🔥 Napi Kombináció</h2>", unsafe_allow_html=True)
+    kombi_html = f"""
+    <div class="modern-card" style="background: linear-gradient(145deg, #2D1B4E, #4A2C6D); border: 2px solid #9D4EDD;">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="font-size: 1.5rem; color: #FACC15; font-weight: 900;">Kombinált Tipp</div>
+        </div>
+    """
     for m in kombi:
-        st.write(f"✅ {m['meccs']} – {m['tip']} (odds {m['odds']:.2f})")
-    st.success(
-        f"Kombi odds: **{ko:.2f}** | Becsült esély: **{ke*100:.1f}%** | "
-        f"EV: **{(ke*ko-1)*100:+.1f}%**"
-    )
+        kombi_html += f"<div style='color: white; margin-bottom: 5px; font-size: 1.1rem;'>✅ {m['meccs']} – {m['tip']}</div>"
+    
+    kombi_html += f"""
+        <div style="border-top: 1px solid rgba(255,255,255,0.2); margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-around;">
+            <div style="text-align: center;">
+                <div style="color: #94a3b8; font-size: 0.9rem;">Kombi Odds</div>
+                <div style="color: #FACC15; font-size: 1.8rem; font-weight: bold;">{ko:.2f}</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="color: #94a3b8; font-size: 0.9rem;">Becsült Esély</div>
+                <div style="color: #10b981; font-size: 1.8rem; font-weight: bold;">{ke*100:.1f}%</div>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(kombi_html, unsafe_allow_html=True)
 
 st.divider()
-st.caption(
-    "Az esély a piaci (margin-eltávolított medián odds) és a Poisson-modell "
-    f"súlyozott átlaga (piac {W_PIAC}, stat {W_STAT}). Csak akkor tippel, ha a két modell "
-    f"legalább {MIN_EGYEZES*100:.0f}%ponton belül egyetért. Nem befektetési tanács."
-       )
+st.caption("Az esély a piaci és a Poisson-modell súlyozott átlaga. Csak akkor tippel, ha a két modell egyetért. Nem befektetési tanács.")
