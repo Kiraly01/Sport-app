@@ -45,19 +45,19 @@ st.markdown("<h1>⚽ Napi Foci Tipp – Prémium Modell</h1>", unsafe_allow_html
 # ============================================================
 # KONFIG
 # ============================================================
-TOP_KUSZOB      = 0.82
-FIGYELO_KUSZOB  = 0.75
+TOP_KUSZOB      = 0.80
+FIGYELO_KUSZOB  = 0.76
 MIN_IRODAK      = 3
 MIN_ODDS        = 1.08
-MAX_ODDS        = 1.60
+MAX_ODDS        = 2.00
 MAX_ODDS_SPREAD = 2.00
-MAX_FAVORIT     = 2.20
+MAX_FAVORIT     = 2.50
 KELLY_FRAKCIO   = 0.25
 BANKROLL        = 10000
 W_PIAC = 0.55
 W_STAT = 0.45
 POISSON_MECCS_SZAM = 30
-MIN_EGYEZES = 0.10
+MIN_EGYEZES = 0.08
 
 LIGAK = [
     "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
