@@ -14,103 +14,33 @@ st.set_page_config(page_title="⚽ Napi Foci Tipp – Modell", page_icon="⚽", 
 
 st.markdown("""
 <style>
-/* Tiszta fekete háttér */
-.stApp {
-    background-color: #000000;
-    color: #e2e8f0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+.stApp { background-color: #000000; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 h1, h2, h3 { color: #ffffff; font-weight: 800; letter-spacing: 1px; }
 p, span, div { font-size: 1.05rem; }
-
-/* Modern Csempe (Card) alap stílus */
-.modern-card {
-    background: #111111;
-    border: 1px solid #333333;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.modern-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 30px rgba(0,0,0,1);
-    border-color: #555555;
-}
-
-/* TOP Tipp csempe színei (Arany/Kék) */
-.top-card {
-    background: #111111;
-    border-left: 6px solid #3b82f6;
-}
-.top-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #333333;
-    padding-bottom: 12px;
-    margin-bottom: 15px;
-}
+.modern-card { background: #111111; border: 1px solid #333333; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.modern-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0,0,0,1); border-color: #555555; }
+.top-card { background: #111111; border-left: 6px solid #3b82f6; }
+.top-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333333; padding-bottom: 12px; margin-bottom: 15px; }
 .top-card-title { font-size: 1.4rem; font-weight: 900; color: #ffffff; }
 .top-card-percent { font-size: 1.6rem; font-weight: 900; color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
-.badge {
-    background: #3b82f6;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-/* Adatok elrendezése a csempén belül */
-.data-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-top: 15px;
-}
-.data-item {
-    background: #1a1a1a;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #222222;
-}
+.badge { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+.data-item { background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #222222; }
 .data-label { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
 .data-value { font-size: 1.2rem; font-weight: bold; color: #ffffff; }
 .tip-text { color: #60a5fa; font-weight: bold; font-size: 1.1rem; margin-top: 10px; display: block;}
 
-/* Figyelőlista csempe */
-.watch-card {
-    background: #111111;
-    border-left: 6px solid #eab308;
-}
+/* Szimulált kártya dizájn */
+.szimulalt-card { background: #111111; border-left: 6px solid #eab308; }
+.szimulalt-badge { background: #eab308; color: #000000; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
 
-/* Figyelmeztetések */
-.warn-box {
-    background: rgba(234, 179, 8, 0.1);
-    border: 1px solid #eab308;
-    color: #fef08a;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    font-weight: 600;
-}
-.danger-box {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid #ef4444;
-    color: #fca5a5;
-    padding: 10px;
-    border-radius: 8px;
-    margin-top: 10px;
-    font-size: 0.9rem;
-}
+.watch-card { background: #111111; border-left: 6px solid #eab308; }
+.warn-box { background: rgba(234, 179, 8, 0.1); border: 1px solid #eab308; color: #fef08a; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; }
+.danger-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1>⚽ Napi Foci Tipp – Prémium Modell</h1>", unsafe_allow_html=True)
-st.markdown("<p style='color:#94a3b8; font-size:1.1rem;'>Poisson statisztika + Piaci odds kombináció. Csak a tökéletes egyezések.</p>", unsafe_allow_html=True)
 
 # ============================================================
 # KONFIG
@@ -119,8 +49,8 @@ TOP_KUSZOB      = 0.82
 FIGYELO_KUSZOB  = 0.75
 MIN_IRODAK      = 3
 MIN_ODDS        = 1.08
-MAX_ODDS        = 1.75
-MAX_ODDS_SPREAD = 2.50
+MAX_ODDS        = 1.60
+MAX_ODDS_SPREAD = 2.00
 MAX_FAVORIT     = 2.20
 KELLY_FRAKCIO   = 0.25
 BANKROLL        = 10000
@@ -140,11 +70,7 @@ FD_LIGAK = {
     "soccer_france_ligue_one": "FL1",
 }
 
-KUPAS_KULCSSZAVAK = [
-    'cup', 'copa', 'kupa', 'trophy', 'playoff', 'play-off', 'clausura', 
-    'apertura', 'qualification', 'knockout', 'round of', 'supercopa'
-]
-
+KUPAS_KULCSSZAVAK = ['cup', 'copa', 'kupa', 'trophy', 'playoff', 'play-off', 'clausura', 'apertura', 'qualification', 'knockout', 'round of', 'supercopa']
 TZ = ZoneInfo("Europe/Budapest")
 
 # ============================================================
@@ -267,6 +193,20 @@ def statisztikai_eselyek(meccs, ero, liga_atlag):
     p_h, p_d, p_v, p_1x, p_x2 = poisson_1x2(lambda_h, lambda_v)
     return {"p_h": p_h, "p_d": p_d, "p_v": p_v, "p_1x": p_1x, "p_x2": p_x2}
 
+def szimulalt_poisson(piac):
+    p_h, p_d, p_v = piac["p_h"], piac["p_d"], piac["p_v"]
+    ossz_gol = 2.7
+    if p_h + p_v > 0:
+        arany = p_h / (p_h + p_v)
+        lambda_h = ossz_gol * arany * 1.1
+        lambda_v = ossz_gol * (1 - arany) * 0.9
+    else:
+        lambda_h, lambda_v = 1.35, 1.35
+    lambda_h = max(0.2, min(lambda_h, 4.0))
+    lambda_v = max(0.2, min(lambda_v, 4.0))
+    p_h, p_d, p_v, p_1x, p_x2 = poisson_1x2(lambda_h, lambda_v)
+    return {"p_h": p_h, "p_d": p_d, "p_v": p_v, "p_1x": p_1x, "p_x2": p_x2, "szimulalt": True}
+
 def piaci_eselyek(meccs):
     hazai, vendeg, dontetlen = [], [], []
     for iroda in meccs.get("bookmakers", []):
@@ -326,10 +266,10 @@ def kieseses_meccs_e(sport_title):
     return any(kulcsszo in sport_title_lower for kulcsszo in KUPAS_KULCSSZAVAK)
 
 # ============================================================
-# FELDOLGOZÁS ÉS DIAGNOSZTIKA
+# FELDOLGOZÁS
 # ============================================================
 def feldolgoz(meccsek, ero, liga_atlag):
-    tippek, figyelo = [], []
+    premium_tippek, szimulalt_tippek, figyelo = [], [], []
     diag = defaultdict(int)
     
     for m in meccsek:
@@ -339,8 +279,14 @@ def feldolgoz(meccsek, ero, liga_atlag):
             continue
 
         stat = statisztikai_eselyek(m, ero, liga_atlag)
+        is_szimulalt = False
+        
         if stat is None:
-            diag["nincs_statisztika"] += 1
+            diag["szimulalt_statisztika"] += 1
+            stat = szimulalt_poisson(piac)
+            is_szimulalt = True
+        else:
+            diag["valos_statisztika"] += 1
             
         komb, mod = kombinalt_esely(piac, stat)
         is_kieseses = kieseses_meccs_e(m.get("sport_title", ""))
@@ -357,14 +303,14 @@ def feldolgoz(meccsek, ero, liga_atlag):
                 diag["rossz_odds"] += 1
                 continue
                 
-            # JAVÍTÁS: Ha nincs statisztika, csak a figyelőlistára engedjük
-            if stat is not None and not egyezik(p_piac, p_stat): 
+            if not egyezik(p_piac, p_stat): 
                 diag["modellek_nem_egyeznek"] += 1
                 continue
 
             if legjobb is None or p > legjobb["esely"]:
                 legjobb = {"kod": kod, "tip": nev, "esely": p, "odds": odds,
-                           "p_piac": p_piac, "p_stat": p_stat, "ev": (p * odds - 1) * 100, "mod": mod}
+                           "p_piac": p_piac, "p_stat": p_stat, "ev": (p * odds - 1) * 100, "mod": mod,
+                           "szimulalt": is_szimulalt}
 
         if legjobb is None: continue
 
@@ -374,27 +320,35 @@ def feldolgoz(meccsek, ero, liga_atlag):
             "kelly": kelly_tet(legjobb["esely"], legjobb["odds"]), "kieseses": is_kieseses, **legjobb,
         }
 
-        # Kieséses VAGY statisztika nélküli meccsek CSAK a figyelőlistára
-        if legjobb["esely"] >= TOP_KUSZOB and not is_kieseses and stat is not None:
-            tippek.append(adat)
-        elif legjobb["esely"] >= FIGYELO_KUSZOB:
-            figyelo.append(adat)
+        # Szétválasztás: Prémium (valós) vs Szimulált
+        if not is_kieseses:
+            if legjobb["esely"] >= TOP_KUSZOB:
+                if is_szimulalt:
+                    szimulalt_tippek.append(adat)
+                else:
+                    premium_tippek.append(adat)
+            elif legjobb["esely"] >= FIGYELO_KUSZOB:
+                figyelo.append(adat)
+            else:
+                diag["kuszob_alatt"] += 1
         else:
-            diag["kuszob_alatt"] += 1
+            # Kieséses meccsek csak figyelőlistára
+            if legjobb["esely"] >= FIGYELO_KUSZOB:
+                figyelo.append(adat)
 
-    tippek.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
+    premium_tippek.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
+    szimulalt_tippek.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
     figyelo.sort(key=lambda x: (x["esely"], x["ev"]), reverse=True)
-    return tippek, figyelo, diag
+    
+    return premium_tippek, szimulalt_tippek, figyelo, diag
 
 # ============================================================
 # FUTTATÁS
 # ============================================================
 with st.sidebar:
     st.header("⚙️ Beállítások")
-    if FD_KEY:
-        st.success("✅ Poisson modell aktív")
-    else:
-        st.warning("⚠️ Nincs FOOTBALL_DATA_KEY – Csak piaci mód")
+    if FD_KEY: st.success("✅ Valós adatok elérhetők")
+    else: st.warning("⚠️ Csak szimulált statisztika")
     st.divider()
     if st.button("🔄 Adatok frissítése", use_container_width=True, type="primary"):
         st.cache_data.clear()
@@ -408,13 +362,10 @@ if not meccsek:
     st.error("❌ Nincs meccs. Ellenőrizd az API kulcsot / kvótát.")
     st.stop()
 
-tippek, figyelo, diag = feldolgoz(meccsek, ero, liga_atlag)
+premium, szimulalt, figyelo, diag = feldolgoz(meccsek, ero, liga_atlag)
 
 st.markdown(f"<div style='color:#94a3b8; margin-bottom: 20px;'>📡 API Kvóta: <b>{kvota}</b> | Meccsek: <b>{len(meccsek)}</b> | Ligák: <b>{len(ero)}</b></div>", unsafe_allow_html=True)
 
-# ============================================================
-# DIAGNOSZTIKA (Sidebar)
-# ============================================================
 with st.sidebar:
     st.divider()
     st.subheader("🔍 Diagnosztika")
@@ -422,20 +373,18 @@ with st.sidebar:
     if diag:
         for k, v in diag.items():
             st.write(f"• {k}: {v}")
-    else:
-        st.write("Nincs kihagyott meccs.")
 
 # ============================================================
-# MEGJELENÍTÉS - TOP TIPPEK
+# MEGJELENÍTÉS - PRÉMIUM (VALÓS)
 # ============================================================
-st.markdown("<h2 style='margin-top: 30px;'>⭐ Prémium Tippek</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='margin-top: 30px;'>⭐ Prémium Tippek (Valós statisztika)</h2>", unsafe_allow_html=True)
 
-if not tippek:
-    st.markdown("<div class='warn-box'>Nincs olyan meccs, ami elérte volna a 82%-os biztonsági küszöböt, nem kieséses, és a modellek is egyetértenek. A mai napon ne fogadj!</div>", unsafe_allow_html=True)
+if not premium:
+    st.markdown("<div class='warn-box'>Jelenleg nincs olyan valós statisztikával rendelkező meccs, ami elérte a 82%-os biztonsági küszöböt és a modellek is egyetértenek.</div>", unsafe_allow_html=True)
 else:
-    for t in tippek[:10]:
+    for t in premium[:10]:
         kies_warn = "<div class='danger-box'>⚠️ KIESÉSES MECCS - Csak óvatosan!</div>" if t['kieseses'] else ""
-        stat_val = f"{t['p_stat']*100:.1f}%" if t['p_stat'] else "Nincs adat"
+        stat_val = f"{t['p_stat']*100:.1f}%"
         
         html_card = f"""
         <div class="modern-card top-card">
@@ -475,13 +424,62 @@ else:
         st.markdown(html_card, unsafe_allow_html=True)
 
 # ============================================================
+# MEGJELENÍTÉS - SZIMULÁLT
+# ============================================================
+if szimulalt:
+    st.markdown("<h2 style='margin-top: 40px;'>⚠️ Szimulált Statisztikás Tippek</h2>", unsafe_allow_html=True)
+    st.markdown("<div class='warn-box'>Ezeknél a meccseknél a valós statisztika nem elérhető, ezért a piaci oddsokból lett becsülve a Poisson modell. Kevesebb biztonságot nyújtanak!</div>", unsafe_allow_html=True)
+    
+    for t in szimulalt[:10]:
+        stat_val = f"{t['p_stat']*100:.1f}%"
+        
+        html_card = f"""
+        <div class="modern-card szimulalt-card">
+            <div class="top-card-header">
+                <div>
+                    <div class="top-card-title">{t['meccs']}</div>
+                    <div style="color: #94a3b8; font-size: 0.9rem; margin-top: 5px;">📅 {t['ido']} | 🏆 {t['liga']}</div>
+                </div>
+                <div class="top-card-percent" style="color: #eab308;">{t['esely']*100:.1f}%</div>
+            </div>
+            <span class="tip-text">👉 Tipp: {t['tip']}</span>
+            <div style="margin-top: 10px; margin-bottom: 5px;">
+                <span class="szimulalt-badge">SZIMULÁLT STATISZTIKA</span>
+            </div>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">Odds</div>
+                    <div class="data-value">{t['odds']:.2f}</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Várható Érték (EV)</div>
+                    <div class="data-value" style="color: #eab308;">{t['ev']:+.1f}%</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Piaci Esély</div>
+                    <div class="data-value">{t['p_piac']*100:.1f}%</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Becsült Poisson</div>
+                    <div class="data-value" style="color: #eab308;">{stat_val} (szim.)</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span class="badge" style="background-color: #eab308; color: #000;">{t['mod']}</span>
+                <span style="font-size: 1.2rem; color: #eab308; font-weight: bold;">💰 Tét: {t['kelly']:,.0f} Ft</span>
+            </div>
+        </div>
+        """
+        st.markdown(html_card, unsafe_allow_html=True)
+
+# ============================================================
 # MEGJELENÍTÉS - FIGYELŐLISTA
 # ============================================================
 if figyelo:
     st.markdown("<h2 style='margin-top: 40px;'>🟡 Figyelőlista</h2>", unsafe_allow_html=True)
     for t in figyelo[:10]:
         kies_warn = "<div class='danger-box' style='padding: 5px; margin-top: 5px;'>⚠️ KIESÉSES MECCS</div>" if t['kieseses'] else ""
-        stat_text = "Nincs stat." if t['p_stat'] is None else f"Stat: {t['p_stat']*100:.1f}%"
+        stat_text = "Szimulált" if t.get('szimulalt') else f"Stat: {t['p_stat']*100:.1f}%"
         
         html_card = f"""
         <div class="modern-card watch-card">
@@ -500,40 +498,5 @@ if figyelo:
         """
         st.markdown(html_card, unsafe_allow_html=True)
 
-# ============================================================
-# KOMBI
-# ============================================================
-if len(tippek) >= 2:
-    kombi = tippek[:2]
-    ko, ke = 1.0, 1.0
-    for m in kombi:
-        ko *= m["odds"]
-        ke *= m["esely"]
-    
-    st.markdown("<h2 style='margin-top: 40px;'>🔥 Napi Kombináció</h2>", unsafe_allow_html=True)
-    kombi_html = f"""
-    <div class="modern-card" style="background: #1a0b2e; border: 2px solid #9D4EDD;">
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div style="font-size: 1.5rem; color: #FACC15; font-weight: 900;">Kombinált Tipp</div>
-        </div>
-    """
-    for m in kombi:
-        kombi_html += f"<div style='color: white; margin-bottom: 5px; font-size: 1.1rem;'>✅ {m['meccs']} – {m['tip']}</div>"
-    
-    kombi_html += f"""
-        <div style="border-top: 1px solid rgba(255,255,255,0.2); margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-around;">
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 0.9rem;">Kombi Odds</div>
-                <div style="color: #FACC15; font-size: 1.8rem; font-weight: bold;">{ko:.2f}</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 0.9rem;">Becsült Esély</div>
-                <div style="color: #10b981; font-size: 1.8rem; font-weight: bold;">{ke*100:.1f}%</div>
-            </div>
-        </div>
-    </div>
-    """
-    st.markdown(kombi_html, unsafe_allow_html=True)
-
 st.divider()
-st.caption("Az esély a piaci és a Poisson-modell súlyozott átlaga. Csak akkor tippel, ha a két modell egyetért. Nem befektetési tanács.")
+st.caption("Az esély a piaci és a Poisson-modell súlyozott átlaga. Nem befektetési tanács.")
