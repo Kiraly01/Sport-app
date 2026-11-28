@@ -23,7 +23,7 @@ MIN_IRODAK      = 3
 MIN_ODDS        = 1.08
 MAX_ODDS        = 1.60
 MAX_ODDS_SPREAD = 2.00
-MAX_FAVORIT     = 1.40
+MAX_FAVORIT     = 2.20
 KELLY_FRAKCIO   = 0.25
 BANKROLL        = 10000
 
@@ -34,7 +34,7 @@ W_STAT = 0.45
 # Poisson: hány meccsből számoljon erősséget
 POISSON_MECCS_SZAM = 30
 # minimum különbség a két modell között (kiszámíthatóság)
-MIN_EGYEZES = 0.25   # 5 százalékpont
+MIN_EGYEZES = 0.10 # 5 százalékpont
 
 LIGAK = [
     "soccer_epl",
