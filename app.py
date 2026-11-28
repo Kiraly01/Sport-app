@@ -164,8 +164,9 @@ for m in meccsek:
 
         if legjobb is None:
             legjobb = (nev, esely, odds)
+elif esely > legjobblegjobb = (nev, esely, odds)
 
-        elif esely > legjobblegjobb = (nev, esely, odds)
+        
 
     if legjobb is None:
         continue
